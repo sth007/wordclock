@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ESP32 WiFi Setup.</title>
+</head>
+
+<body style="font-family:sans-serif; max-width:520px; margin:40px auto;">
+    <h2>WLAN einrichten</h2>
+
+    <form method="POST" action="/save">
+        <label>SSID</label><br>
+        <input name="ssid" style="width:100%;padding:10px" required><br><br>
+
+        <label>Passwort</label><br>
+        <input name="pass" type="password" style="width:100%;padding:10px"><br><br>
+
+        <button type="submit" style="padding:10px 18px">Speichern & Neustarten</button>
+    </form>
+
+    <form method="POST" action="/brightness">
+        <label>Helligkeit (1-10)</label><br>
+        <input name="brightness" type="number" min="1" max="10" value="10" style="width:100%;padding:10px"><br><br>
+        <button type="submit" style="padding:10px 18px">Setzen</button>
+    </form>
+
+    <p style="opacity:0.7;margin-top:18px">
+        <a href="/config">Konfiguration</a> | <a href="/ota">OTA aktivieren</a> | <a href="/reboot">Neustart</a>
+    </p>
+</body>
+
+</html>

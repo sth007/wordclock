@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Wordclock Status</title>
+    <style>
+        #ledMatrix {
+            background-image: url('/wordclock.jpeg');
+            background-size: cover;
+            background-position: center;
+            width: 460px; /* 23 * 20px */
+            height: 460px; /* 20 * 20px */
+            position: relative;
+        }
+        #ledMatrix table {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-collapse: collapse;
+        }
+        #ledMatrix td {
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+        }
+        #ledMatrix td.active {
+            background-color: rgba(255, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body style="font-family:sans-serif; max-width:520px; margin:40px auto;">
+    <h2>Wordclock Status.</h2>
+    <p><strong>Aktuelle Uhrzeit:</strong> {{currentTime}}</p>
+    <p><strong>Helligkeit:</strong> {{brightness}}/10</p>
+    <p><strong>NTP-Server:</strong> {{ntpServer}}</p>
+    <p><strong>GMT Offset:</strong> {{gmtOffset}}h</p>
+    <p><strong>Sommerzeit Offset:</strong> {{daylightOffset}}h</p>
+    <p><strong>Test-Modus:</strong> {{testMode}}</p>
+    <p><strong>Erste LED-Test:</strong> {{firstLEDMode}}</p>
+    <p><strong>IP-Adresse:</strong> {{ipAddress}}</p>
+    <p><strong>Hostname:</strong> wordclock.local</p>
+    <br>
+    <h3>LED-Matrix (aktuelle Anzeige)</h3>
+    <p style="font-size: 18px; font-weight: bold; text-align: center;">{{timeWords}}</p>
+    <div id="ledMatrix">{{ledMatrix}}</div>
+    <br>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <a href="/test" style="padding:10px 18px; background:#007bff; color:white; text-decoration:none; border-radius:4px;">LED-Test {{testToggle}}</a>
+        <a href="/testfirst" style="padding:10px 18px; background:#28a745; color:white; text-decoration:none; border-radius:4px;">Erste LED-Test {{firstLEDToggle}}</a>
+        <a href="/config" style="padding:10px 18px; background:#17a2b8; color:white; text-decoration:none; border-radius:4px;">Konfiguration</a>
+        <a href="/ota" style="padding:10px 18px; background:#ffc107; color:black; text-decoration:none; border-radius:4px;">OTA</a>
+        <a href="/reboot" style="padding:10px 18px; background:#dc3545; color:white; text-decoration:none; border-radius:4px;">Reboot</a>
+    </div>
+    <script>
+        function updateMatrix() {
+            fetch('/api/leds')
+                .then(response => response.json())
+                .then(leds => {
+                    let html = '<table border="1" style="border-collapse:collapse;">';
+                    for (let row = 0; row < 20; row++) {  // 10 Wortzeilen * 2 physikalische Reihen
+                        html += '<tr>';
+                        for (let col = 0; col < 23; col++) {
+                            let index = row * 23 + col;
+                            let isBottomRow = row % 2 === 1;
+                            let actualCol = isBottomRow ? 22 - col : col;
+                            let displayIndex = row * 23 + actualCol;
+                            let active = leds[displayIndex] === 1;
+                            let className = active ? 'active' : '';
+                            html += `<td class="${className}"></td>`;
+                        }
+                        html += '</tr>';
+                    }
+                    html += '</table>';
+                    document.getElementById('ledMatrix').innerHTML = html;
+                });
+        }
+        setInterval(updateMatrix, 1000);  // Alle Sekunde aktualisieren
+    </script>
+</body>
+</html>
