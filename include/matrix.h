@@ -1,12 +1,12 @@
 #pragma once
 
 // ===== Matrix-Grunddaten =====
-constexpr int LEDS_PER_ROW   =41;
-constexpr int ROWS_PER_WORD  = 1;
-constexpr int WORD_ROWS      = 10;
+constexpr int LEDS_PER_ROW   = 41;  // LEDs pro physische Reihe
+constexpr int ROWS_PER_WORD  = 1;   // 1 physische Reihe pro Wortreihe
+constexpr int WORD_ROWS      = 10;  // 10 Wortzeilen
 
-constexpr int TOTAL_ROWS  = WORD_ROWS * ROWS_PER_WORD;
-constexpr int TOTAL_LEDS  = TOTAL_ROWS * LEDS_PER_ROW;
+constexpr int TOTAL_ROWS  = WORD_ROWS * ROWS_PER_WORD;  // 10 physische Reihen
+constexpr int TOTAL_LEDS  = TOTAL_ROWS * LEDS_PER_ROW;  // 410 LEDs gesamt
 
 // Helligkeit 1..10
 constexpr int BRIGHTNESS_LEVEL = 10;

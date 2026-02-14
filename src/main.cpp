@@ -184,17 +184,19 @@ void loop()
   // OTA bedienen (macht nichts, wenn nicht verbunden)
   handleOTA();
 
-  // Zeit jede Minute aktualisieren oder Test-Modus
-  if (millis() - lastTimeUpdate >= TIME_UPDATE_INTERVAL_MS)
-  {
+  // Im Test-Modus schneller laufen (für Animation)
+  if (testMode || firstLEDMode) {
     if (firstLEDMode) {
       showFirstLED();
     } else if (testMode) {
       showAllWords();
-    } else {
-      updateTime();
-      showTime(currentHour, currentMinute);
     }
+  } 
+  // Zeit jede Minute aktualisieren in Normal-Mode
+  else if (millis() - lastTimeUpdate >= TIME_UPDATE_INTERVAL_MS)
+  {
+    updateTime();
+    showTime(currentHour, currentMinute);
     lastTimeUpdate = millis();
   }
 

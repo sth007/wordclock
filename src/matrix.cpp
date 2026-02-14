@@ -3,6 +3,9 @@
 // LED-Zustände initialisieren
 bool ledStates[TOTAL_LEDS] = {false};
 
+// Makro um Arraygröße automatisch zu berechnen
+#define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 // ===== Funktionen =====
 int getTotalLEDs() {
     return TOTAL_LEDS;
@@ -15,44 +18,67 @@ int getTopRowStart(int wordRow) {
 // ===== Wortdefinitionen =====
 
 // Reihe 1
-const int WORD_ES[]    = {0,1,2,3};                                             const int LEN_ES = 4;
-const int WORD_IST[]   = {6,7,8,9,10,11};                                       const int LEN_IST = 6;
-const int WORD_FUENF[] = {15,16,17,18,19,20,21,22};                             const int LEN_FUENF = 8;
+const int WORD_ES[]    = {0,1,2,3,4,5,6};
+const int LEN_ES = ARRAY_LEN(WORD_ES);
+const int WORD_IST[]   = {6,7,8,9,10,11};
+const int LEN_IST = ARRAY_LEN(WORD_IST);
+const int WORD_FUENF[] = {15,16,17,18,19,20,21,22};
+const int LEN_FUENF = ARRAY_LEN(WORD_FUENF);
 
 // Reihe 2
-const int WORD_ZEHN[]    = {0,1,2,3,4,5,6,7,8};                                 const int LEN_ZEHN = 9;
-const int WORD_ZWANZIG[] = {9,10,11,12,13,14,15,16,17,18,19,20,21,22};          const int LEN_ZWANZIG = 14;
+const int WORD_ZEHN[]    = {0,1,2,3,4,5,6,7,8};
+const int LEN_ZEHN = ARRAY_LEN(WORD_ZEHN);
+const int WORD_ZWANZIG[] = {9,10,11,12,13,14,15,16,17,18,19,20,21,22};
+const int LEN_ZWANZIG = ARRAY_LEN(WORD_ZWANZIG);
 
 // Reihe 3
-const int WORD_DREI[]    = {0,1,2,3,4,5};                                       const int LEN_DREI = 6;
-const int WORD_VIERTEL[] = {6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};    const int LEN_VIERTEL = 17;
+const int WORD_DREI[]    = {0,1,2,3,4,5};
+const int LEN_DREI = ARRAY_LEN(WORD_DREI);
+const int WORD_VIERTEL[] = {6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22};
+const int LEN_VIERTEL = ARRAY_LEN(WORD_VIERTEL);
 
 // Reihe 4
-const int WORD_VOR[]  = {0,1,2,3,4,5,6};                                        const int LEN_VOR = 7;
-const int WORD_NACH[] = {15,16,17,18,19,20,21,22};                              const int LEN_NACH = 8;
+const int WORD_VOR[]  = {0,1,2,3,4,5,6};
+const int LEN_VOR = ARRAY_LEN(WORD_VOR);
+const int WORD_NACH[] = {15,16,17,18,19,20,21,22};
+const int LEN_NACH = ARRAY_LEN(WORD_NACH);
 
 // Reihe 5
-const int WORD_HALB[]    = {0,1,2,3,4,5,6};                                     const int LEN_HALB = 7;
-const int WORD_ELF[]     = {11,12,13};                                          const int LEN_ELF = 3;
-const int WORD_FUENF_H[] = {15,16,17,18,19,20,21,22};                           const int LEN_FUENF_H = 8;
+const int WORD_HALB[]    = {0,1,2,3,4,5,6};
+const int LEN_HALB = ARRAY_LEN(WORD_HALB);
+const int WORD_ELF[]     = {11,12,13};
+const int LEN_ELF = ARRAY_LEN(WORD_ELF);
+const int WORD_FUENF_H[] = {15,16,17,18,19,20,21,22};
+const int LEN_FUENF_H = ARRAY_LEN(WORD_FUENF_H);
 
 // Reihe 6
-const int WORD_EINS[] = {0,1,2,3};                                              const int LEN_EINS = 4;
-const int WORD_ZWEI[] = {6,7,8,9};                                              const int LEN_ZWEI = 4;
+const int WORD_EINS[] = {0,1,2,3};
+const int LEN_EINS = ARRAY_LEN(WORD_EINS);
+const int WORD_ZWEI[] = {6,7,8,9};
+const int LEN_ZWEI = ARRAY_LEN(WORD_ZWEI);
 
 // Reihe 7
-const int WORD_DREI_H[] = {0,1,2,3};                                            const int LEN_DREI_H = 4;
-const int WORD_VIER[]   = {6,7,8,9};                                            const int LEN_VIER = 4;
+const int WORD_DREI_H[] = {0,1,2,3};
+const int LEN_DREI_H = ARRAY_LEN(WORD_DREI_H);
+const int WORD_VIER[]   = {6,7,8,9};
+const int LEN_VIER = ARRAY_LEN(WORD_VIER);
 
 // Reihe 8
-const int WORD_SECHS[] = {0,1,2,3,4};                                           const int LEN_SECHS = 5;
-const int WORD_ACHT[]  = {7,8,9,10};                                            const int LEN_ACHT = 4;
+const int WORD_SECHS[] = {0,1,2,3,4};
+const int LEN_SECHS = ARRAY_LEN(WORD_SECHS);
+const int WORD_ACHT[]  = {7,8,9,10};
+const int LEN_ACHT = ARRAY_LEN(WORD_ACHT);
 
 // Reihe 9
-const int WORD_SIEBEN[] = {0,1,2,3,4,5};                                        const int LEN_SIEBEN = 6;
-const int WORD_NEUN[]   = {7,8,9,10};                                          const int LEN_NEUN = 4;
-const int WORD_ZWOELF[] = {12,13,14,15,16,17};                                 const int LEN_ZWOELF = 6;
+const int WORD_SIEBEN[] = {0,1,2,3,4,5};
+const int LEN_SIEBEN = ARRAY_LEN(WORD_SIEBEN);
+const int WORD_NEUN[]   = {7,8,9,10};
+const int LEN_NEUN = ARRAY_LEN(WORD_NEUN);
+const int WORD_ZWOELF[] = {12,13,14,15,16,17};
+const int LEN_ZWOELF = ARRAY_LEN(WORD_ZWOELF);
 
 // Reihe 10
-const int WORD_ZEHN_H[] = {0,1,2,3};                                            const int LEN_ZEHN_H = 4;
-const int WORD_UHR[]    = {6,7,8};                                              const int LEN_UHR = 3;
+const int WORD_ZEHN_H[] = {0,1,2,3};
+const int LEN_ZEHN_H = ARRAY_LEN(WORD_ZEHN_H);
+const int WORD_UHR[]    = {6,7,8};
+const int LEN_UHR = ARRAY_LEN(WORD_UHR);

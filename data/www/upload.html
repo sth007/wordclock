@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Wordclock Image Upload</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+        .container { background: #f9f9f9; padding: 20px; border-radius: 4px; }
+        h2 { color: #333; }
+        .upload-area { border: 2px dashed #007bff; padding: 30px; text-align: center; border-radius: 4px; cursor: pointer; }
+        .upload-area:hover { background: #f0f7ff; }
+        .upload-area.dragover { background: #e8f4f8; border-color: #0056b3; }
+        input[type="file"] { display: none; }
+        #preview { max-width: 100%; margin-top: 20px; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        .info { background: #e8f4f8; padding: 15px; border-radius: 4px; margin-top: 20px; }
+        .info p { margin: 5px 0; font-size: 13px; }
+        .status { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .nav { margin-top: 20px; text-align: center; }
+        .nav a { color: #007bff; text-decoration: none; margin: 0 10px; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Wordclock Hintergrundbild Upload</h2>
+        
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <p style="font-size: 18px;">📸 Bild hier hinziehen oder klicken zum Auswählen</p>
+            <p style="font-size: 13px; color: #666;">JPG/PNG, max 500KB, empfohlen: 410×410px</p>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*">
+        
+        <div id="preview"></div>
+        
+        <div style="text-align: center;">
+            <button onclick="uploadImage()" id="uploadBtn" style="display:none;">Hochladen</button>
+            <button onclick="clearPreview()" id="clearBtn" style="display:none;">Löschen</button>
+        </div>
+        
+        <div id="status" class="status" style="display:none;"></div>
+        
+        <div class="info">
+            <p><strong>ℹ️ Information:</strong></p>
+            <p>Das Bild wird als Hintergrund in der LED-Matrix angezeigt. Es sollte die Buchstaben/Wörter der Wordclock zeigen, damit du beim Konfigurieren weißt, welche LEDs zu welchem Buchstaben gehören.</p>
+            <p><strong>Empfehlungen:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Bildgröße: 410×410 Pixel (41 LEDs × 10 Reihen × 1px pro LED)</li>
+                <li>Format: JPG oder PNG</li>
+                <li>Dateigröße: unter 500KB</li>
+            </ul>
+        </div>
+        
+        <div class="nav">
+            <a href="/">← Zurück</a>
+            <a href="/status">LED Editor →</a>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusDiv = document.getElementById('status');
+
+        // Drag & Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                showStatus('Datei zu groß! Max. 500KB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; border-radius: 4px;">`;
+                uploadBtn.style.display = 'inline-block';
+                clearBtn.style.display = 'inline-block';
+                statusDiv.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function uploadImage() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/uploadimage', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                showStatus('Bild erfolgreich hochgeladen! 🎉', 'success');
+                uploadBtn.textContent = 'Hochladen';
+                uploadBtn.disabled = false;
+            })
+            .catch(error => {
+                showStatus('Fehler beim Upload: ' + error, 'error');
+                uploadBtn.textContent = 'Hochladen';
+                uploadBtn.disabled = false;
+            });
+        }
+
+        function clearPreview() {
+            preview.innerHTML = '';
+            fileInput.value = '';
+            uploadBtn.style.display = 'none';
+            clearBtn.style.display = 'none';
+            statusDiv.style.display = 'none';
+        }
+
+        function showStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

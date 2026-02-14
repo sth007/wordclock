@@ -3,8 +3,74 @@
 #include "matrix.h"
 #include <Arduino.h>
 
-// Zeigt alle Wörter für LED-Test
+// Test: Zeigt alle Reihen nacheinander mit Pausen (verwendet Timing)
+void testAllRows()
+{
+    extern Adafruit_NeoPixel strip;
+    extern int brightness;
+    
+    static int currentRow = 0;
+    static unsigned long lastRowChange = 0;
+    static bool initialized = false;
+    const unsigned long ROW_DURATION = 1000; // 1 Sekunde pro Reihe
+    
+    unsigned long now = millis();
+    
+    // Initialisiere beim ersten Aufruf
+    if (!initialized) {
+        lastRowChange = now;
+        initialized = true;
+    }
+    
+    // Wechsel zur nächsten Reihe nach ROW_DURATION
+    if (now - lastRowChange >= ROW_DURATION) {
+        lastRowChange = now;
+        
+        clearAll();
+        
+        // Berechne LED-Farbe basierend auf Helligkeit
+        float s = brightness / 10.0f;
+        uint32_t color = strip.Color(10*s, 10*s, 10*s);
+        
+        // Alle LEDs der aktuellen Reihe leuchten lassen
+        int rowStart = currentRow * LEDS_PER_ROW;
+        
+        for (int i = 0; i < LEDS_PER_ROW; i++) {
+            strip.setPixelColor(rowStart + i, color);
+            ledStates[rowStart + i] = true;
+        }
+        
+        strip.show();
+        
+        // Zur nächsten Reihe
+        currentRow++;
+        if (currentRow >= TOTAL_ROWS) {
+            currentRow = 0; // Zurück zur ersten Reihe
+        }
+    }
+}
+
+// Zeigt alle Wörter für LED-Test (veraltet - verwende testAllRows stattdessen)
 void showAllWords()
+{
+    testAllRows();
+}
+
+// Zeigt nur die erste LED für Test
+void showFirstLED()
+{
+    clearAll();
+    uint32_t color = dimColor(10, 10, 10); // volle Helligkeit für Test
+
+    // Nur die erste LED leuchten lassen
+    extern Adafruit_NeoPixel strip;
+    strip.setPixelColor(0, color);
+    strip.show();
+    ledStates[0] = true;
+}
+
+// Test: Zeigt alle Wörter gleichzeitig
+void showAllWordsAtOnce()
 {
     clearAll();
     uint32_t color = dimColor(10, 10, 10); // volle Helligkeit für Test
@@ -33,19 +99,6 @@ void showAllWords()
     lightWord("ZWOELF", color);
     lightWord("ZEHN_H", color);
     lightWord("UHR", color);
-}
-
-// Zeigt nur die erste LED für Test
-void showFirstLED()
-{
-    clearAll();
-    uint32_t color = dimColor(10, 10, 10); // volle Helligkeit für Test
-
-    // Nur die erste LED leuchten lassen
-    extern Adafruit_NeoPixel strip;
-    strip.setPixelColor(0, color);
-    strip.show();
-    ledStates[0] = true;
 }
 
 // Hilfsfunktion: Stunde als Wort anzeigen

@@ -1,3 +1,7 @@
 {
-    "idf.currentSetup": "/Users/zaour/esp/esp-idf"
+    "idf.currentSetup": "/Users/zaour/esp/esp-idf",
+    "chat.tools.terminal.autoApprove": {
+        "pio": true,
+        "timeout": true
+    }
 }
