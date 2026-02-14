@@ -70,12 +70,17 @@
                     <input name="ntpServer" value="{{ntpServer}}">
                 </div>
                 <div class="row">
-                    <label>GMT Offset (Stunden)</label>
-                    <input name="gmtOffset" type="number" value="{{gmtOffset}}">
-                </div>
-                <div class="row">
-                    <label>Sommerzeit Offset (Stunden)</label>
-                    <input name="daylightOffset" type="number" value="{{daylightOffset}}">
+                    <label>Zeitzone (Stadt)</label>
+                    <select id="timezoneCity" name="timezoneCity">
+                        <option value="berlin">Berlin</option>
+                        <option value="london">London</option>
+                        <option value="newyork">New York</option>
+                        <option value="chicago">Chicago</option>
+                        <option value="denver">Denver</option>
+                        <option value="losangeles">Los Angeles</option>
+                        <option value="tokyo">Tokyo</option>
+                        <option value="sydney">Sydney</option>
+                    </select>
                 </div>
                 <div class="row">
                     <label>Helligkeit (1-10)</label>
@@ -315,6 +320,7 @@
 
         window.addEventListener('load', () => {
             setLedOrigin(parseInt('{{ledOrigin}}', 10) || 0);
+            document.getElementById('timezoneCity').value = '{{timezoneCity}}';
             loadWordMappings();
             updateInfo();
             updateHealth();

@@ -15,6 +15,7 @@ extern int brightness;
 extern String ntpServer;
 extern long gmtOffset_sec;
 extern int daylightOffset_sec;
+extern String timezoneCity;
 extern bool testMode;
 extern bool firstLEDMode;
 extern String ssid;
@@ -127,6 +128,8 @@ String processor(const String& var) {
     return String(gmtOffset_sec / 3600);
   } else if (var == "daylightOffset") {
     return String(daylightOffset_sec / 3600);
+  } else if (var == "timezoneCity") {
+    return timezoneCity;
   } else if (var == "testMode") {
     return ::testMode ? "Aktiv (alle LEDs)" : "Inaktiv";
   } else if (var == "firstLEDMode") {
@@ -569,8 +572,7 @@ namespace WebServerLogic
           // Ersetze Platzhalter
           html.replace("{{currentTime}}", processor("currentTime"));
           html.replace("{{ntpServer}}", processor("ntpServer"));
-          html.replace("{{gmtOffset}}", processor("gmtOffset"));
-          html.replace("{{daylightOffset}}", processor("daylightOffset"));
+          html.replace("{{timezoneCity}}", processor("timezoneCity"));
           html.replace("{{brightness}}", processor("brightness"));
           html.replace("{{ssid}}", processor("ssid"));
           html.replace("{{timeWords}}", processor("timeWords"));
@@ -587,8 +589,13 @@ namespace WebServerLogic
                   {
 
       if (request->hasParam("ntpServer", true)) ntpServer = request->getParam("ntpServer", true)->value();
-      if (request->hasParam("gmtOffset", true)) gmtOffset_sec = request->getParam("gmtOffset", true)->value().toInt() * 3600;
-      if (request->hasParam("daylightOffset", true)) daylightOffset_sec = request->getParam("daylightOffset", true)->value().toInt() * 3600;
+      if (request->hasParam("timezoneCity", true)) {
+        String tz = request->getParam("timezoneCity", true)->value();
+        tz.trim();
+        if (!tz.isEmpty()) {
+          timezoneCity = tz;
+        }
+      }
       if (request->hasParam("brightness", true)) brightness = request->getParam("brightness", true)->value().toInt();
       if (request->hasParam("ledOrigin", true)) setLedOrigin(request->getParam("ledOrigin", true)->value().toInt());
       if (request->hasParam("ssid", true)) ssid = request->getParam("ssid", true)->value();
@@ -596,8 +603,7 @@ namespace WebServerLogic
 
       prefs.begin("settings", false);
       prefs.putString("ntpServer", ntpServer);
-      prefs.putLong("gmtOffset", gmtOffset_sec);
-      prefs.putInt("daylightOffset", daylightOffset_sec);
+      prefs.putString("timezoneCity", timezoneCity);
       prefs.putInt("brightness", brightness);
       prefs.putInt("ledOrigin", getLedOrigin());
       prefs.end();
@@ -727,7 +733,7 @@ namespace WebServerLogic
         prefs.end();
 
         clearAll();
-        uint32_t color = dimColor(20, 20, 20);
+        uint32_t color = dimColor(255, 255, 255);
         for (const String &word : words) {
             lightWord(word.c_str(), color);
         }

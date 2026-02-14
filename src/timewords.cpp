@@ -3,6 +3,11 @@
 #include "matrix.h"
 #include <Arduino.h>
 
+static uint32_t clockWordColor()
+{
+    return dimColor(255, 255, 255);
+}
+
 // Test: Zeigt alle Reihen nacheinander mit Pausen (verwendet Timing)
 void testAllRows()
 {
@@ -110,18 +115,18 @@ static void showHour(int hour)
     if (hour == 0) hour = 12;
 
     switch (hour) {
-        case 1:  lightWord("EINS", dimColor(20,20,20)); break;
-        case 2:  lightWord("ZWEI", dimColor(20,20,20)); break;
-        case 3:  lightWord("DREI_H", dimColor(20,20,20)); break;
-        case 4:  lightWord("VIER", dimColor(20,20,20)); break;
-        case 5:  lightWord("FUENF_H", dimColor(20,20,20)); break;
-        case 6:  lightWord("SECHS", dimColor(20,20,20)); break;
-        case 7:  lightWord("SIEBEN", dimColor(20,20,20)); break;
-        case 8:  lightWord("ACHT", dimColor(20,20,20)); break;
-        case 9:  lightWord("NEUN", dimColor(20,20,20)); break;
-        case 10: lightWord("ZEHN_H", dimColor(20,20,20)); break;
-        case 11: lightWord("ELF", dimColor(20,20,20)); break;
-        case 12: lightWord("ZWOELF", dimColor(20,20,20)); break;
+        case 1:  lightWord("EINS", clockWordColor()); break;
+        case 2:  lightWord("ZWEI", clockWordColor()); break;
+        case 3:  lightWord("DREI_H", clockWordColor()); break;
+        case 4:  lightWord("VIER", clockWordColor()); break;
+        case 5:  lightWord("FUENF_H", clockWordColor()); break;
+        case 6:  lightWord("SECHS", clockWordColor()); break;
+        case 7:  lightWord("SIEBEN", clockWordColor()); break;
+        case 8:  lightWord("ACHT", clockWordColor()); break;
+        case 9:  lightWord("NEUN", clockWordColor()); break;
+        case 10: lightWord("ZEHN_H", clockWordColor()); break;
+        case 11: lightWord("ELF", clockWordColor()); break;
+        case 12: lightWord("ZWOELF", clockWordColor()); break;
     }
 }
 
@@ -131,69 +136,69 @@ void showTime(int hour, int minute)
     clearAll();
 
     // ES IST
-    lightWord("ES", dimColor(20,20,20));
-    lightWord("IST", dimColor(20,20,20));
+    lightWord("ES", clockWordColor());
+    lightWord("IST", clockWordColor());
 
     if (minute < 5) {
         showHour(hour);
-        lightWord("UHR", dimColor(20,20,20));
+        lightWord("UHR", clockWordColor());
         return;
     }
 
     if (minute < 10) {
-        lightWord("FUENF", dimColor(20,20,20));
-        lightWord("NACH", dimColor(20,20,20));
+        lightWord("FUENF", clockWordColor());
+        lightWord("NACH", clockWordColor());
         showHour(hour);
     }
     else if (minute < 15) {
-        lightWord("ZEHN", dimColor(20,20,20));
-        lightWord("NACH", dimColor(20,20,20));
+        lightWord("ZEHN", clockWordColor());
+        lightWord("NACH", clockWordColor());
         showHour(hour);
     }
     else if (minute < 20) {
-        lightWord("VIERTEL", dimColor(20,20,20));
-        lightWord("NACH", dimColor(20,20,20));
+        lightWord("VIERTEL", clockWordColor());
+        lightWord("NACH", clockWordColor());
         showHour(hour);
     }
     else if (minute < 25) {
-        lightWord("ZWANZIG", dimColor(20,20,20));
-        lightWord("NACH", dimColor(20,20,20));
+        lightWord("ZWANZIG", clockWordColor());
+        lightWord("NACH", clockWordColor());
         showHour(hour);
     }
     else if (minute < 30) {
-        lightWord("FUENF", dimColor(20,20,20));
-        lightWord("VOR", dimColor(20,20,20));
-        lightWord("HALB", dimColor(20,20,20));
+        lightWord("FUENF", clockWordColor());
+        lightWord("VOR", clockWordColor());
+        lightWord("HALB", clockWordColor());
         showHour(hour + 1);
     }
     else if (minute < 35) {
-        lightWord("HALB", dimColor(20,20,20));
+        lightWord("HALB", clockWordColor());
         showHour(hour + 1);
     }
     else if (minute < 40) {
-        lightWord("FUENF", dimColor(20,20,20));
-        lightWord("NACH", dimColor(20,20,20));
-        lightWord("HALB", dimColor(20,20,20));
+        lightWord("FUENF", clockWordColor());
+        lightWord("NACH", clockWordColor());
+        lightWord("HALB", clockWordColor());
         showHour(hour + 1);
     }
     else if (minute < 45) {
-        lightWord("ZWANZIG", dimColor(20,20,20));
-        lightWord("VOR", dimColor(20,20,20));
+        lightWord("ZWANZIG", clockWordColor());
+        lightWord("VOR", clockWordColor());
         showHour(hour + 1);
     }
     else if (minute < 50) {
-        lightWord("VIERTEL", dimColor(20,20,20));
-        lightWord("VOR", dimColor(20,20,20));
+        lightWord("VIERTEL", clockWordColor());
+        lightWord("VOR", clockWordColor());
         showHour(hour + 1);
     }
     else if (minute < 55) {
-        lightWord("ZEHN", dimColor(20,20,20));
-        lightWord("VOR", dimColor(20,20,20));
+        lightWord("ZEHN", clockWordColor());
+        lightWord("VOR", clockWordColor());
         showHour(hour + 1);
     }
     else {
-        lightWord("FUENF", dimColor(20,20,20));
-        lightWord("VOR", dimColor(20,20,20));
+        lightWord("FUENF", clockWordColor());
+        lightWord("VOR", clockWordColor());
         showHour(hour + 1);
     }
 }

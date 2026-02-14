@@ -31,6 +31,7 @@ WiFiUDP ntpUDP;
 String ntpServer = NTP_SERVER;
 long gmtOffset_sec = GMT_OFFSET_SEC;
 int daylightOffset_sec = DAYLIGHT_OFFSET_SEC;
+String timezoneCity = "berlin";
 unsigned long lastTimeUpdate = 0;
 int currentHour = 0;
 int currentMinute = 0;
@@ -44,6 +45,26 @@ unsigned long diagLastWifiDisconnectMs = 0;
 int diagLastWifiDisconnectReason = -1;
 unsigned long diagLastWifiReconnectAttemptMs = 0;
 String diagLastWifiEvent = "boot";
+
+const char* resolveTimezonePosix(const String& city)
+{
+  if (city == "berlin") return "CET-1CEST,M3.5.0/2,M10.5.0/3";
+  if (city == "london") return "GMT0BST,M3.5.0/1,M10.5.0/2";
+  if (city == "newyork") return "EST5EDT,M3.2.0/2,M11.1.0/2";
+  if (city == "chicago") return "CST6CDT,M3.2.0/2,M11.1.0/2";
+  if (city == "denver") return "MST7MDT,M3.2.0/2,M11.1.0/2";
+  if (city == "losangeles") return "PST8PDT,M3.2.0/2,M11.1.0/2";
+  if (city == "tokyo") return "JST-9";
+  if (city == "sydney") return "AEST-10AEDT,M10.1.0/2,M4.1.0/3";
+  return "CET-1CEST,M3.5.0/2,M10.5.0/3";
+}
+
+void applyTimeConfig()
+{
+  const char* tz = resolveTimezonePosix(timezoneCity);
+  configTzTime(tz, ntpServer.c_str());
+  Serial.printf("[TIME] TZ city=%s, tz=%s, ntp=%s\n", timezoneCity.c_str(), tz, ntpServer.c_str());
+}
 
 void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
 {
@@ -59,6 +80,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
       diagLastWifiEvent = "sta_got_ip";
       Serial.println("[WiFi] IP: " + WiFi.localIP().toString());
+      applyTimeConfig();
       break;
     case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
       diagLastWifiEvent = "sta_disconnected";
@@ -99,34 +121,9 @@ void startAP()
 
 time_t getNTPTime()
 {
-  ntpUDP.begin(123);
-  const int NTP_PACKET_SIZE = 48;
-  byte packetBuffer[NTP_PACKET_SIZE];
-
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);
-  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;     // Stratum, or type of clock
-  packetBuffer[2] = 6;     // Polling Interval
-  packetBuffer[3] = 0xEC;  // Peer Clock Precision
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
-
-  ntpUDP.beginPacket(ntpServer.c_str(), 123);
-  ntpUDP.write(packetBuffer, NTP_PACKET_SIZE);
-  ntpUDP.endPacket();
-
-  delay(1000);
-
-  if (ntpUDP.parsePacket()) {
-    ntpUDP.read(packetBuffer, NTP_PACKET_SIZE);
-    unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-    unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-    unsigned long secsSince1900 = highWord << 16 | lowWord;
-    const unsigned long seventyYears = 2208988800UL;
-    time_t epoch = secsSince1900 - seventyYears;
-    return epoch + gmtOffset_sec + daylightOffset_sec;
+  time_t now = time(nullptr);
+  if (now > 100000) {
+    return now;
   }
   return 0;
 }
@@ -134,11 +131,10 @@ time_t getNTPTime()
 void updateTime()
 {
   if (WiFi.status() == WL_CONNECTED) {
-    time_t now = getNTPTime();
-    if (now > 0) {
-      struct tm * timeinfo = localtime(&now);
-      currentHour = timeinfo->tm_hour;
-      currentMinute = timeinfo->tm_min;
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo, 1500)) {
+      currentHour = timeinfo.tm_hour;
+      currentMinute = timeinfo.tm_min;
       lastTimeUpdate = millis();
       diagLastNtpSyncMs = millis();
 
@@ -149,7 +145,10 @@ void updateTime()
         brightness = DEFAULT_BRIGHTNESS;
       }
 
-      Serial.printf("Zeit aktualisiert: %02d:%02d, Helligkeit: %d\n", currentHour, currentMinute, brightness);
+      Serial.printf("Zeit aktualisiert: %02d:%02d, Helligkeit: %d, DST=%d\n",
+                    currentHour, currentMinute, brightness, timeinfo.tm_isdst);
+    } else {
+      Serial.println("[TIME] getLocalTime fehlgeschlagen");
     }
   }
 }
@@ -179,6 +178,7 @@ void setup()
   ntpServer = prefs.getString("ntpServer", NTP_SERVER);
   gmtOffset_sec = prefs.getLong("gmtOffset", GMT_OFFSET_SEC);
   daylightOffset_sec = prefs.getInt("daylightOffset", DAYLIGHT_OFFSET_SEC);
+  timezoneCity = prefs.getString("timezoneCity", "berlin");
   testMode = prefs.getBool("testMode", false);
   firstLEDMode = prefs.getBool("firstLEDMode", false);
   setLedOrigin(prefs.getInt("ledOrigin", ORIGIN_TOP_LEFT));
