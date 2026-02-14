@@ -2,6 +2,7 @@
 
 // LED-Zustände initialisieren
 bool ledStates[TOTAL_LEDS] = {false};
+LedOrigin ledOrigin = ORIGIN_TOP_LEFT;
 
 // Makro um Arraygröße automatisch zu berechnen
 #define ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -13,6 +14,55 @@ int getTotalLEDs() {
 
 int getTopRowStart(int wordRow) {
     return wordRow * LEDS_PER_ROW * ROWS_PER_WORD;
+}
+
+int mapLogicalToPhysical(int logicalRow, int logicalCol)
+{
+    if (logicalRow < 0 || logicalRow >= TOTAL_ROWS || logicalCol < 0 || logicalCol >= LEDS_PER_ROW) {
+        return -1;
+    }
+
+    // k = Reihenindex in Verdrahtungsreihenfolge (0 = erste physisch verkabelte Reihe)
+    const bool startsFromTop = (ledOrigin == ORIGIN_TOP_LEFT || ledOrigin == ORIGIN_TOP_RIGHT);
+    const bool startsFromLeft = (ledOrigin == ORIGIN_TOP_LEFT || ledOrigin == ORIGIN_BOTTOM_LEFT);
+    int k = startsFromTop ? logicalRow : (TOTAL_ROWS - 1 - logicalRow);
+
+    // Zig-zag: jede nächste Reihe läuft entgegengesetzt.
+    bool rowGoesLeftToRight = startsFromLeft;
+    if ((k % 2) == 1) {
+        rowGoesLeftToRight = !rowGoesLeftToRight;
+    }
+
+    int physicalCol = rowGoesLeftToRight ? logicalCol : (LEDS_PER_ROW - 1 - logicalCol);
+    return k * LEDS_PER_ROW + physicalCol;
+}
+
+void setLedOrigin(int origin)
+{
+    if (origin < ORIGIN_TOP_LEFT || origin > ORIGIN_BOTTOM_RIGHT) {
+        return;
+    }
+    ledOrigin = static_cast<LedOrigin>(origin);
+}
+
+int getLedOrigin()
+{
+    return static_cast<int>(ledOrigin);
+}
+
+const char* getLedOriginName()
+{
+    switch (ledOrigin) {
+    case ORIGIN_TOP_RIGHT:
+        return "oben_rechts";
+    case ORIGIN_BOTTOM_LEFT:
+        return "unten_links";
+    case ORIGIN_BOTTOM_RIGHT:
+        return "unten_rechts";
+    case ORIGIN_TOP_LEFT:
+    default:
+        return "oben_links";
+    }
 }
 
 // ===== Wortdefinitionen =====

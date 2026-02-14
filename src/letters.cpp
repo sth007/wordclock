@@ -120,12 +120,11 @@ uint32_t dimColor(uint8_t r, uint8_t g, uint8_t b) {
 void lightWord(const char* word, uint32_t color) {
     WordMap *entry = findWord(word);
     if (entry) {
-        int rowStart = getTopRowStart(entry->row);
         logVal("lightWord", word);
 
         for (int i = 0; i < entry->count; i++) {
             int pos = entry->leds[i];
-            int led = rowStart + pos;
+            int led = mapLogicalToPhysical(entry->row, pos);
             if (led < 0 || led >= TOTAL_LEDS) {
                 continue;
             }
@@ -203,8 +202,12 @@ void testFirstRow() {
     
     // Setze alle 41 LEDs mit Delays zwischen setPixelColor() Aufrufen
     for (int i = 0; i < LEDS_PER_ROW; i++) {
-        pixelsPtr->setPixelColor(i, color);
-        ledStates[i] = true;
+        int led = mapLogicalToPhysical(0, i);
+        if (led < 0 || led >= TOTAL_LEDS) {
+            continue;
+        }
+        pixelsPtr->setPixelColor(led, color);
+        ledStates[led] = true;
         delay(1);  // 1ms Verzögerung um Stromspitzen zu vermeiden
     }
     

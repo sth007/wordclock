@@ -21,6 +21,13 @@ extern String ssid;
 extern String pass;
 extern int currentHour;
 extern int currentMinute;
+extern unsigned long diagLastLoopMs;
+extern unsigned long diagLoopCounter;
+extern unsigned long diagLastNtpSyncMs;
+extern unsigned long diagLastWifiDisconnectMs;
+extern int diagLastWifiDisconnectReason;
+extern unsigned long diagLastWifiReconnectAttemptMs;
+extern String diagLastWifiEvent;
 
 // Extern für Funktionen aus main.cpp
 extern void updateTime();
@@ -95,25 +102,14 @@ String getTimeWords(int hour, int minute) {
 // Funktion zur Generierung der LED-Matrix
 String generateLEDMatrix() {
     String html = "<table style='border-collapse: collapse;'>";
-    // Gehe durch alle Wortreihen (10 Wortreihen)
-    for (int wordRow = 0; wordRow < WORD_ROWS; wordRow++) {
-        // Für jede Wortreihe 2 physische Reihen (oben/unten)
-        for (int rowInWord = 0; rowInWord < ROWS_PER_WORD; rowInWord++) {
-            html += "<tr>";
-            int physicalRow = wordRow * ROWS_PER_WORD + rowInWord;
-            bool isBottomRow = (rowInWord == 1);
-            for (int col = 0; col < LEDS_PER_ROW; col++) {
-                int actualCol = isBottomRow ? (LEDS_PER_ROW - 1 - col) : col;
-                int ledIndex = physicalRow * LEDS_PER_ROW + actualCol;
-                String color = ledStates[ledIndex] ? "#ffff00" : "#cccccc";
-                html += "<td style='width:20px; height:20px; background-color:" + color + "; border:1px solid #999;'></td>";
-            }
-            html += "</tr>";
+    for (int row = 0; row < WORD_ROWS; row++) {
+        html += "<tr>";
+        for (int col = 0; col < LEDS_PER_ROW; col++) {
+            int ledIndex = mapLogicalToPhysical(row, col);
+            String color = (ledIndex >= 0 && ledStates[ledIndex]) ? "#ffff00" : "#cccccc";
+            html += "<td style='width:20px; height:20px; background-color:" + color + "; border:1px solid #999;'></td>";
         }
-        // Trennlinie nach jeder Wortreihe (dunklere Linie)
-        if (wordRow < WORD_ROWS - 1) {
-            html += "<tr style='height:2px;'><td colspan='" + String(LEDS_PER_ROW) + "' style='background-color:#333;'></td></tr>";
-        }
+        html += "</tr>";
     }
     html += "</table>";
     return html;
@@ -149,6 +145,10 @@ String processor(const String& var) {
     return String(LEDS_PER_ROW);
   } else if (var == "wordRows") {
     return String(WORD_ROWS);
+  } else if (var == "ledOrigin") {
+    return String(getLedOrigin());
+  } else if (var == "ledOriginName") {
+    return String(getLedOriginName());
   } else if (var == "ledMatrix") {
     return generateLEDMatrix();
   } else if (var == "timeWords") {
@@ -225,6 +225,64 @@ namespace
             start = comma + 1;
         }
         return !out.empty();
+    }
+
+    bool parseCsvWords(const String &csv, std::vector<String> &out)
+    {
+        out.clear();
+        int start = 0;
+        while (start <= csv.length()) {
+            int comma = csv.indexOf(',', start);
+            String token = (comma >= 0) ? csv.substring(start, comma) : csv.substring(start);
+            token.trim();
+            if (!token.isEmpty()) {
+                out.push_back(token);
+            }
+            if (comma < 0) {
+                break;
+            }
+            start = comma + 1;
+        }
+        return true;
+    }
+
+    bool isKnownWord(const String &word)
+    {
+        int count = getWordCount();
+        for (int i = 0; i < count; i++) {
+            const char *name = getWordNameAt(i);
+            if (name && word.equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    const char* wifiModeName(wifi_mode_t mode)
+    {
+        switch (mode) {
+        case WIFI_STA: return "STA";
+        case WIFI_AP: return "AP";
+        case WIFI_AP_STA: return "AP_STA";
+        case WIFI_MODE_NULL:
+        default:
+            return "OFF";
+        }
+    }
+
+    const char* wifiStatusName(wl_status_t status)
+    {
+        switch (status) {
+        case WL_CONNECTED: return "CONNECTED";
+        case WL_DISCONNECTED: return "DISCONNECTED";
+        case WL_CONNECTION_LOST: return "CONNECTION_LOST";
+        case WL_NO_SSID_AVAIL: return "NO_SSID";
+        case WL_CONNECT_FAILED: return "CONNECT_FAILED";
+        case WL_IDLE_STATUS: return "IDLE";
+        case WL_SCAN_COMPLETED: return "SCAN_COMPLETED";
+        default:
+            return "UNKNOWN";
+        }
     }
 
     bool saveWordMappingsToNvs()
@@ -379,8 +437,19 @@ namespace WebServerLogic
         server.on("/save", HTTP_POST, [&](AsyncWebServerRequest *request)
                   {
       String ssid, pass;
-      if (request->hasParam("ssid", true)) ssid = request->getParam("ssid", true)->value();
-      if (request->hasParam("pass", true)) pass = request->getParam("pass", true)->value();
+      if (request->hasParam("ssid", true)) {
+        String newSsid = request->getParam("ssid", true)->value();
+        newSsid.trim();
+        if (!newSsid.isEmpty()) {
+          ssid = newSsid;
+        }
+      }
+      if (request->hasParam("pass", true)) {
+        String newPass = request->getParam("pass", true)->value();
+        if (!newPass.isEmpty()) {
+          pass = newPass;
+        }
+      }
 
       prefs.begin("wifi", false);
       prefs.putString("ssid", ssid);
@@ -507,6 +576,7 @@ namespace WebServerLogic
           html.replace("{{timeWords}}", processor("timeWords"));
           html.replace("{{testMode}}", processor("testMode"));
           html.replace("{{firstLEDMode}}", processor("firstLEDMode"));
+          html.replace("{{ledOrigin}}", processor("ledOrigin"));
           request->send(200, "text/html", html);
         } else {
           request->send(404, "text/plain", "Datei nicht gefunden");
@@ -520,6 +590,7 @@ namespace WebServerLogic
       if (request->hasParam("gmtOffset", true)) gmtOffset_sec = request->getParam("gmtOffset", true)->value().toInt() * 3600;
       if (request->hasParam("daylightOffset", true)) daylightOffset_sec = request->getParam("daylightOffset", true)->value().toInt() * 3600;
       if (request->hasParam("brightness", true)) brightness = request->getParam("brightness", true)->value().toInt();
+      if (request->hasParam("ledOrigin", true)) setLedOrigin(request->getParam("ledOrigin", true)->value().toInt());
       if (request->hasParam("ssid", true)) ssid = request->getParam("ssid", true)->value();
       if (request->hasParam("pass", true)) pass = request->getParam("pass", true)->value();
 
@@ -528,6 +599,7 @@ namespace WebServerLogic
       prefs.putLong("gmtOffset", gmtOffset_sec);
       prefs.putInt("daylightOffset", daylightOffset_sec);
       prefs.putInt("brightness", brightness);
+      prefs.putInt("ledOrigin", getLedOrigin());
       prefs.end();
 
       prefs.begin("wifi", false);
@@ -542,9 +614,13 @@ namespace WebServerLogic
     // API-Endpunkt für LED-Zustände
     server.on("/api/leds", HTTP_GET, [](AsyncWebServerRequest *request) {
         String json = "[";
-        for (int i = 0; i < TOTAL_LEDS; i++) {
-            if (i > 0) json += ",";
-            json += ledStates[i] ? "1" : "0";
+        int outIndex = 0;
+        for (int row = 0; row < WORD_ROWS; row++) {
+            for (int col = 0; col < LEDS_PER_ROW; col++) {
+                if (outIndex++ > 0) json += ",";
+                int ledIndex = mapLogicalToPhysical(row, col);
+                json += (ledIndex >= 0 && ledStates[ledIndex]) ? "1" : "0";
+            }
         }
         json += "]";
         request->send(200, "application/json", json);
@@ -560,6 +636,25 @@ namespace WebServerLogic
         json += "\"timeWords\":\"" + processor("timeWords") + "\",";
         json += "\"testMode\":" + String(::testMode ? "true" : "false") + ",";
         json += "\"firstLEDMode\":" + String(::firstLEDMode ? "true" : "false");
+        json += "}";
+        request->send(200, "application/json", json);
+    });
+
+    server.on("/api/health", HTTP_GET, [](AsyncWebServerRequest *request) {
+        String json = "{";
+        json += "\"uptimeMs\":" + String(millis()) + ",";
+        json += "\"freeHeap\":" + String(ESP.getFreeHeap()) + ",";
+        json += "\"loopCounter\":" + String(diagLoopCounter) + ",";
+        json += "\"lastLoopMs\":" + String(diagLastLoopMs) + ",";
+        json += "\"lastNtpSyncMs\":" + String(diagLastNtpSyncMs) + ",";
+        json += "\"lastWifiDisconnectMs\":" + String(diagLastWifiDisconnectMs) + ",";
+        json += "\"lastWifiDisconnectReason\":" + String(diagLastWifiDisconnectReason) + ",";
+        json += "\"lastWifiReconnectAttemptMs\":" + String(diagLastWifiReconnectAttemptMs) + ",";
+        json += "\"lastWifiEvent\":\"" + diagLastWifiEvent + "\",";
+        json += "\"wifiMode\":\"" + String(wifiModeName(WiFi.getMode())) + "\",";
+        json += "\"wifiStatus\":\"" + String(wifiStatusName(WiFi.status())) + "\",";
+        json += "\"rssi\":" + String((WiFi.status() == WL_CONNECTED) ? WiFi.RSSI() : 0) + ",";
+        json += "\"ip\":\"" + WiFi.localIP().toString() + "\"";
         json += "}";
         request->send(200, "application/json", json);
     });
@@ -602,6 +697,42 @@ namespace WebServerLogic
         }
 
         request->send(200, "text/plain", "Gespeichert");
+    });
+
+    server.on("/api/preview-words", HTTP_POST, [&](AsyncWebServerRequest *request) {
+        String wordsCsv = "";
+        if (request->hasParam("words", true)) {
+            wordsCsv = request->getParam("words", true)->value();
+        }
+        wordsCsv.trim();
+
+        std::vector<String> words;
+        if (!parseCsvWords(wordsCsv, words)) {
+            request->send(400, "text/plain", "Ungueltige Wortliste");
+            return;
+        }
+
+        for (const String &word : words) {
+            if (!isKnownWord(word)) {
+                request->send(400, "text/plain", "Unbekanntes Wort: " + word);
+                return;
+            }
+        }
+
+        ::testMode = false;
+        ::firstLEDMode = false;
+        prefs.begin("settings", false);
+        prefs.putBool("testMode", ::testMode);
+        prefs.putBool("firstLEDMode", ::firstLEDMode);
+        prefs.end();
+
+        clearAll();
+        uint32_t color = dimColor(20, 20, 20);
+        for (const String &word : words) {
+            lightWord(word.c_str(), color);
+        }
+
+        request->send(200, "text/plain", "Vorschau aktualisiert");
     });
 
     server.on("/api/background", HTTP_GET, [](AsyncWebServerRequest *request) {

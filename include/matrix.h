@@ -14,6 +14,16 @@ constexpr int BRIGHTNESS_LEVEL = 10;
 // LED-Zustände für Live-Update
 extern bool ledStates[TOTAL_LEDS];
 
+enum LedOrigin
+{
+    ORIGIN_TOP_LEFT = 0,
+    ORIGIN_TOP_RIGHT = 1,
+    ORIGIN_BOTTOM_LEFT = 2,
+    ORIGIN_BOTTOM_RIGHT = 3
+};
+
+extern LedOrigin ledOrigin;
+
 // Wortreihen
 constexpr int ROW_1 = 0;
 constexpr int ROW_2 = 1;
@@ -29,6 +39,10 @@ constexpr int ROW_10 = 9;
 // Funktionen
 int getTotalLEDs();
 int getTopRowStart(int wordRow);
+int mapLogicalToPhysical(int logicalRow, int logicalCol);
+void setLedOrigin(int origin);
+int getLedOrigin();
+const char* getLedOriginName();
 
 // ===== Wortdefinitionen =====
 

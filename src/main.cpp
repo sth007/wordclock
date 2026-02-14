@@ -37,12 +37,47 @@ int currentMinute = 0;
 int brightness = DEFAULT_BRIGHTNESS; // 1-10
 bool testMode = false;
 bool firstLEDMode = false;
+unsigned long diagLastLoopMs = 0;
+unsigned long diagLoopCounter = 0;
+unsigned long diagLastNtpSyncMs = 0;
+unsigned long diagLastWifiDisconnectMs = 0;
+int diagLastWifiDisconnectReason = -1;
+unsigned long diagLastWifiReconnectAttemptMs = 0;
+String diagLastWifiEvent = "boot";
+
+void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info)
+{
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_START:
+      diagLastWifiEvent = "sta_start";
+      Serial.println("[WiFi] STA gestartet");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      diagLastWifiEvent = "sta_connected";
+      Serial.println("[WiFi] Mit AP verbunden");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      diagLastWifiEvent = "sta_got_ip";
+      Serial.println("[WiFi] IP: " + WiFi.localIP().toString());
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      diagLastWifiEvent = "sta_disconnected";
+      diagLastWifiDisconnectMs = millis();
+      diagLastWifiDisconnectReason = static_cast<int>(info.wifi_sta_disconnected.reason);
+      Serial.printf("[WiFi] Disconnect, reason=%d\n", diagLastWifiDisconnectReason);
+      break;
+    default:
+      break;
+  }
+}
 
 bool connectToWiFi(const String &ssid, const String &pass, uint32_t timeoutMs = 15000)
 {
   if (ssid.isEmpty())
     return false;
 
+  WiFi.setSleep(false);
+  WiFi.setAutoReconnect(true);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid.c_str(), pass.c_str());
 
@@ -105,6 +140,7 @@ void updateTime()
       currentHour = timeinfo->tm_hour;
       currentMinute = timeinfo->tm_min;
       lastTimeUpdate = millis();
+      diagLastNtpSyncMs = millis();
 
       // Nachtmodus: 22:00 - 05:59 dimmen
       if (currentHour >= NIGHT_START_HOUR || currentHour < NIGHT_END_HOUR) {
@@ -122,6 +158,7 @@ void setup()
 {
   Serial.begin(115200);
   delay(300);
+  WiFi.onEvent(onWiFiEvent);
 
   // LEDs initialisieren
   strip.begin();
@@ -144,6 +181,7 @@ void setup()
   daylightOffset_sec = prefs.getInt("daylightOffset", DAYLIGHT_OFFSET_SEC);
   testMode = prefs.getBool("testMode", false);
   firstLEDMode = prefs.getBool("firstLEDMode", false);
+  setLedOrigin(prefs.getInt("ledOrigin", ORIGIN_TOP_LEFT));
   prefs.end();
 
   // Verbinden oder AP starten
@@ -181,8 +219,19 @@ void setup()
 
 void loop()
 {
+  diagLastLoopMs = millis();
+  diagLoopCounter++;
+
   // OTA bedienen (macht nichts, wenn nicht verbunden)
   handleOTA();
+
+  if (WiFi.getMode() == WIFI_STA && WiFi.status() != WL_CONNECTED && !ssid.isEmpty()) {
+    if (millis() - diagLastWifiReconnectAttemptMs >= 10000) {
+      diagLastWifiReconnectAttemptMs = millis();
+      Serial.println("[WiFi] Reconnect-Versuch...");
+      WiFi.reconnect();
+    }
+  }
 
   // Im Test-Modus schneller laufen (für Animation)
   if (testMode || firstLEDMode) {

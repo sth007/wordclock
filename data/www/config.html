@@ -9,7 +9,7 @@
         .grid { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 20px; align-items: start; }
         .card { background: #f8f8f8; border: 1px solid #ddd; border-radius: 6px; padding: 14px; }
         .card h3 { margin: 0 0 10px 0; }
-        form input { width: 100%; padding: 10px; box-sizing: border-box; }
+        form input, form select { width: 100%; padding: 10px; box-sizing: border-box; }
         form label { font-weight: 600; display: block; margin-bottom: 4px; }
         .btn { padding: 10px 14px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: #fff; }
         .btn:hover { background: #005fc5; }
@@ -19,11 +19,25 @@
         #statusText { margin-top: 8px; min-height: 20px; }
         #clockInfo { margin: 8px 0 12px 0; font-size: 14px; }
         #clockInfo strong { color: #111; }
+        #healthInfo { margin: 8px 0 12px 0; font-size: 13px; border: 1px solid #ddd; border-radius: 4px; padding: 8px; background: #fff; }
+        #healthInfo div { margin: 3px 0; }
+        #healthInfo strong { color: #111; }
         #ledMatrix { overflow-x: auto; border: 1px solid #ddd; border-radius: 4px; background: #fff; padding: 6px; }
         #ledMatrix table { border-collapse: collapse; }
         #ledMatrix th { width: 18px; height: 18px; font-size: 10px; color: #666; border: 1px solid transparent; text-align: center; }
         #ledMatrix td { width: 18px; height: 18px; border: 1px solid #999; background: #ddd; }
         #ledMatrix td.active { background: #ffeb3b; }
+        #ledMatrix td.preview { background: #ff9800; }
+        #ledMatrix td.active.preview { background: #f9c634; }
+        #wordButtonsRows { margin-bottom: 10px; }
+        .word-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+        .word-row-label { min-width: 70px; color: #333; font-size: 13px; font-weight: 600; }
+        .word-btn { border: 1px solid #999; background: #f1f1f1; color: #222; border-radius: 4px; padding: 5px 9px; font-size: 12px; cursor: pointer; }
+        .word-btn.active { background: #ff9800; border-color: #d97e00; color: #fff; }
+        .btn.small { padding: 6px 10px; font-size: 12px; }
+        .origin-buttons { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 8px; }
+        .origin-btn { border: 2px solid #999; background: #f1f1f1; color: #222; border-radius: 4px; padding: 10px; font-size: 13px; cursor: pointer; text-align: center; }
+        .origin-btn.active { background: #ffc107; border-color: #ff9800; font-weight: 700; }
         @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -36,6 +50,15 @@
                 <div>Aktuelle Uhrzeit: <strong id="currentTime">{{currentTime}}</strong></div>
                 <div>Zeit in Worten: <strong id="timeWords">{{timeWords}}</strong></div>
                 <div>Testmodus: <strong id="testMode">{{testMode}}</strong>, Erste LED: <strong id="firstLEDMode">{{firstLEDMode}}</strong></div>
+            </div>
+            <div id="healthInfo">
+                <div>Netz: <strong id="healthWifi">-</strong></div>
+                <div>IP: <strong id="healthIp">-</strong></div>
+                <div>RSSI: <strong id="healthRssi">-</strong></div>
+                <div>Heap: <strong id="healthHeap">-</strong></div>
+                <div>Uptime: <strong id="healthUptime">-</strong></div>
+                <div>Letzter WiFi-Event: <strong id="healthEvent">-</strong></div>
+                <div>Disconnect Grund: <strong id="healthDiscReason">-</strong></div>
             </div>
             <div class="row">
                 <button type="button" class="btn secondary" onclick="activateNormalTime()">Uhrzeitanzeige aktivieren</button>
@@ -71,6 +94,16 @@
                     <input name="wordRows" type="number" value="{{wordRows}}">
                 </div>
                 <div class="row">
+                    <label>LED-Startpunkt</label>
+                    <input type="hidden" id="ledOrigin" name="ledOrigin" value="{{ledOrigin}}">
+                    <div class="origin-buttons">
+                        <button type="button" class="origin-btn" data-origin="0" onclick="setLedOrigin(0)">Oben links</button>
+                        <button type="button" class="origin-btn" data-origin="1" onclick="setLedOrigin(1)">Oben rechts</button>
+                        <button type="button" class="origin-btn" data-origin="3" onclick="setLedOrigin(3)">Unten rechts</button>
+                        <button type="button" class="origin-btn" data-origin="2" onclick="setLedOrigin(2)">Unten links</button>
+                    </div>
+                </div>
+                <div class="row">
                     <label>SSID</label>
                     <input name="ssid" value="{{ssid}}">
                 </div>
@@ -86,15 +119,35 @@
         <div class="card">
             <h3>LED-Status (Live)</h3>
             <p style="margin-top:0">Aktive LEDs werden gelb dargestellt.</p>
+            <div id="wordButtonsRows"></div>
+            <button type="button" class="btn small" onclick="clearWordSelection()">Wortauswahl löschen</button>
             <div id="ledMatrix"></div>
         </div>
     </div>
 
     <script>
+        const LEDS_PER_ROW = 41;
+        const WORD_ROWS = 10;
+        const WORD_ROW_MAP = {
+            ES: 1, IST: 1, FUENF: 1, ZEHN: 2, ZWANZIG: 2, DREI: 3, VIERTEL: 3, VOR: 4, NACH: 4, HALB: 5,
+            ELF: 5, FUENF_H: 5, EINS: 6, ZWEI: 6, DREI_H: 7, VIER: 7, SECHS: 8, ACHT: 8, SIEBEN: 9,
+            ZWOELF: 9, ZEHN_H: 10, NEUN: 10, UHR: 10
+        };
+        let liveLedStates = [];
+        let wordMappings = {};
+        const selectedWords = new Set();
+
         function setStatus(text, ok = true) {
             const el = document.getElementById('statusText');
             el.textContent = text;
             el.style.color = ok ? '#0a8f3f' : '#b00020';
+        }
+
+        function setLedOrigin(value) {
+            document.getElementById('ledOrigin').value = String(value);
+            document.querySelectorAll('.origin-btn').forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset.origin === String(value));
+            });
         }
 
         function activateNormalTime() {
@@ -102,6 +155,8 @@
                 .then(async (r) => {
                     const msg = await r.text();
                     if (!r.ok) throw new Error(msg || 'Fehler');
+                    selectedWords.clear();
+                    renderWordButtons();
                     setStatus(msg, true);
                     updateInfo();
                     updateLedMatrix();
@@ -121,31 +176,151 @@
                 .catch(() => {});
         }
 
+        function formatUptime(ms) {
+            const total = Math.max(0, Math.floor((ms || 0) / 1000));
+            const h = Math.floor(total / 3600);
+            const m = Math.floor((total % 3600) / 60);
+            const s = total % 60;
+            return `${h}h ${m}m ${s}s`;
+        }
+
+        function updateHealth() {
+            fetch('/api/health')
+                .then((r) => r.json())
+                .then((data) => {
+                    document.getElementById('healthWifi').textContent = `${data.wifiMode || '-'} / ${data.wifiStatus || '-'}`;
+                    document.getElementById('healthIp').textContent = data.ip || '-';
+                    document.getElementById('healthRssi').textContent = (data.rssi !== undefined) ? `${data.rssi} dBm` : '-';
+                    document.getElementById('healthHeap').textContent = (data.freeHeap !== undefined) ? `${data.freeHeap} B` : '-';
+                    document.getElementById('healthUptime').textContent = formatUptime(data.uptimeMs);
+                    document.getElementById('healthEvent').textContent = data.lastWifiEvent || '-';
+                    document.getElementById('healthDiscReason').textContent = (data.lastWifiDisconnectReason !== undefined) ? String(data.lastWifiDisconnectReason) : '-';
+                })
+                .catch(() => {});
+        }
+
+        function getWordRow(word) {
+            return WORD_ROW_MAP[word] || 1;
+        }
+
+        function loadWordMappings() {
+            fetch('/api/words')
+                .then((r) => r.json())
+                .then((data) => {
+                    wordMappings = data || {};
+                    renderWordButtons();
+                    renderLedMatrix();
+                })
+                .catch(() => {});
+        }
+
+        function renderWordButtons() {
+            const root = document.getElementById('wordButtonsRows');
+            const byRow = Array.from({ length: WORD_ROWS }, () => []);
+
+            Object.keys(wordMappings).forEach((word) => {
+                const row = getWordRow(word);
+                if (row >= 1 && row <= WORD_ROWS) byRow[row - 1].push(word);
+            });
+
+            let html = '';
+            for (let row = 0; row < WORD_ROWS; row++) {
+                const words = byRow[row];
+                if (!words.length) continue;
+                html += `<div class="word-row"><span class="word-row-label">Reihe ${row + 1}</span>`;
+                for (const word of words) {
+                    const activeClass = selectedWords.has(word) ? 'active' : '';
+                    html += `<button type="button" class="word-btn ${activeClass}" onclick="toggleWord('${word}')">${word}</button>`;
+                }
+                html += '</div>';
+            }
+            root.innerHTML = html;
+        }
+
+        function toggleWord(word) {
+            if (selectedWords.has(word)) selectedWords.delete(word);
+            else selectedWords.add(word);
+            renderWordButtons();
+            syncWordPreview();
+            renderLedMatrix();
+        }
+
+        function clearWordSelection() {
+            selectedWords.clear();
+            renderWordButtons();
+            syncWordPreview();
+            renderLedMatrix();
+        }
+
+        function syncWordPreview() {
+            const words = Array.from(selectedWords).join(',');
+            fetch('/api/preview-words', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `words=${encodeURIComponent(words)}`
+            })
+            .then(async (r) => {
+                const txt = await r.text();
+                if (!r.ok) throw new Error(txt || 'Fehler bei Vorschau');
+                updateInfo();
+                updateLedMatrix();
+            })
+            .catch((e) => setStatus(e.message, false));
+        }
+
+        function buildPreviewIndices() {
+            const preview = new Set();
+            selectedWords.forEach((word) => {
+                const leds = wordMappings[word];
+                if (!Array.isArray(leds)) return;
+                const row = getWordRow(word) - 1;
+                if (row < 0 || row >= WORD_ROWS) return;
+                leds.forEach((pos) => {
+                    const idx = row * LEDS_PER_ROW + Number(pos);
+                    if (idx >= 0 && idx < WORD_ROWS * LEDS_PER_ROW) preview.add(idx);
+                });
+            });
+            return preview;
+        }
+
+        function renderLedMatrix() {
+            const preview = buildPreviewIndices();
+            let h = '<table><tr>';
+            for (let c = 0; c < LEDS_PER_ROW; c++) h += `<th>${c}</th>`;
+            h += '</tr>';
+            for (let r = 0; r < WORD_ROWS; r++) {
+                h += '<tr>';
+                for (let c = 0; c < LEDS_PER_ROW; c++) {
+                    const i = r * LEDS_PER_ROW + c;
+                    const active = liveLedStates[i] === 1;
+                    const inPreview = preview.has(i);
+                    const className = `${active ? 'active' : ''} ${inPreview ? 'preview' : ''}`.trim();
+                    h += `<td class="${className}" title="LED ${i}"></td>`;
+                }
+                h += '</tr>';
+            }
+            h += '</table>';
+            document.getElementById('ledMatrix').innerHTML = h;
+        }
+
         function updateLedMatrix() {
             fetch('/api/leds')
                 .then((r) => r.json())
                 .then((leds) => {
-                    let h = '<table><tr>';
-                    for (let c = 0; c < 41; c++) h += `<th>${c}</th>`;
-                    h += '</tr>';
-                    for (let r = 0; r < 10; r++) {
-                        h += '<tr>';
-                        for (let c = 0; c < 41; c++) {
-                            const i = r * 41 + c;
-                            h += `<td class="${leds[i] === 1 ? 'active' : ''}" title="LED ${i}"></td>`;
-                        }
-                        h += '</tr>';
-                    }
-                    h += '</table>';
-                    document.getElementById('ledMatrix').innerHTML = h;
+                    liveLedStates = leds || [];
+                    renderLedMatrix();
                 })
                 .catch(() => {});
         }
 
         window.addEventListener('load', () => {
+            setLedOrigin(parseInt('{{ledOrigin}}', 10) || 0);
+            loadWordMappings();
             updateInfo();
+            updateHealth();
             updateLedMatrix();
             setInterval(updateInfo, 1000);
+            setInterval(updateHealth, 2000);
             setInterval(updateLedMatrix, 1000);
         });
     </script>

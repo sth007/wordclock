@@ -7,7 +7,9 @@
     <style>
         body { font-family: sans-serif; max-width: 1200px; margin: 20px auto; padding: 20px; }
         #matrixContainer { display: flex; gap: 20px; margin-top: 20px; }
-        #wordButtons { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        #wordButtons { display: grid; gap: 6px; margin-bottom: 12px; }
+        .wordRow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+        .rowLabel { min-width: 70px; font-size: 12px; color: #555; font-weight: 600; }
         .wordBtn { padding: 6px 10px; background: #ddd; border: 2px solid #999; border-radius: 4px; cursor: pointer; font-size: 12px; }
         .wordBtn.selected { background: #ffc107; border-color: #ff9800; font-weight: bold; }
         #ledMatrixWrapper { flex: 1; }
@@ -92,6 +94,11 @@
         };
         let words = {};
         let selectedLeds = [], editingWord = null;
+        const wordOrder = [
+            'ES', 'IST', 'FUENF', 'ZEHN', 'ZWANZIG', 'DREI', 'VIERTEL', 'VOR', 'NACH', 'HALB',
+            'ELF', 'FUENF_H', 'EINS', 'ZWEI', 'DREI_H', 'VIER', 'SECHS', 'ACHT', 'SIEBEN',
+            'ZWOELF', 'ZEHN_H', 'NEUN', 'UHR'
+        ];
         const wordRows = {
             ES: 0, IST: 0, FUENF: 0,
             ZEHN: 1, ZWANZIG: 1,
@@ -108,8 +115,49 @@
             const matrix = document.getElementById('ledMatrix');
             matrix.style.backgroundImage = `url('/api/background?t=${Date.now()}')`;
         }
-        function initWordButtons() { let h = ''; for (let w in words) h += `<button class="wordBtn" data-word="${w}" onclick="selectWord('${w}')">${w}</button>`; document.getElementById('wordButtons').innerHTML = h; }
-        function selectWord(w) { editingWord = w; selectedLeds = [...(words[w] || [])]; document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected')); document.querySelector(`[data-word="${w}"]`).classList.add('selected'); updateMatrixHighlight(); document.getElementById('selectedWord').innerHTML = `Wort: <strong>${w}</strong>`; document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`; }
+        function initWordButtons() {
+            const rows = Array.from({ length: 10 }, () => []);
+            for (const word of wordOrder) {
+                if (!Object.prototype.hasOwnProperty.call(words, word)) continue;
+                const row = wordRows[word];
+                if (row >= 0 && row < rows.length) rows[row].push(word);
+            }
+            for (const word of Object.keys(words)) {
+                if (wordOrder.includes(word)) continue;
+                const row = wordRows[word];
+                if (row >= 0 && row < rows.length) rows[row].push(word);
+            }
+
+            let h = '';
+            for (let row = 0; row < rows.length; row++) {
+                if (rows[row].length === 0) continue;
+                h += `<div class="wordRow"><span class="rowLabel">Reihe ${row + 1}</span>`;
+                for (const word of rows[row]) {
+                    h += `<button class="wordBtn" data-word="${word}" onclick="selectWord('${word}')">${word}</button>`;
+                }
+                h += '</div>';
+            }
+            document.getElementById('wordButtons').innerHTML = h;
+        }
+        function previewWords(wordList) {
+            const body = new URLSearchParams();
+            body.set('words', wordList.join(','));
+            return fetch('/api/preview-words', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+        }
+        function selectWord(w) {
+            editingWord = w;
+            selectedLeds = [...(words[w] || [])];
+            document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
+            document.querySelector(`[data-word="${w}"]`).classList.add('selected');
+            updateMatrixHighlight();
+            document.getElementById('selectedWord').innerHTML = `Wort: <strong>${w}</strong>`;
+            document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
+            previewWords([w]).catch(() => {});
+        }
         function updateMatrixHighlight() {
             const row = wordRows[editingWord];
             document.querySelectorAll('#ledMatrix td').forEach(c => {
@@ -174,7 +222,15 @@
             })
             .catch((err) => alert('Fehler beim Speichern: ' + err.message));
         }
-        function cancelEdit() { editingWord = null; selectedLeds = []; document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected')); document.getElementById('selectedWord').innerHTML = 'Wort: <strong>Keine Auswahl</strong>'; document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>'; updateMatrixHighlight(); }
+        function cancelEdit() {
+            editingWord = null;
+            selectedLeds = [];
+            document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('selectedWord').innerHTML = 'Wort: <strong>Keine Auswahl</strong>';
+            document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>';
+            updateMatrixHighlight();
+            previewWords([]).catch(() => {});
+        }
         function uploadBackgroundImage() {
             const input = document.getElementById('bgFile');
             const status = document.getElementById('bgUploadStatus');

@@ -33,11 +33,13 @@ void testAllRows()
         uint32_t color = strip.Color(10*s, 10*s, 10*s);
         
         // Alle LEDs der aktuellen Reihe leuchten lassen
-        int rowStart = currentRow * LEDS_PER_ROW;
-        
         for (int i = 0; i < LEDS_PER_ROW; i++) {
-            strip.setPixelColor(rowStart + i, color);
-            ledStates[rowStart + i] = true;
+            int led = mapLogicalToPhysical(currentRow, i);
+            if (led < 0 || led >= TOTAL_LEDS) {
+                continue;
+            }
+            strip.setPixelColor(led, color);
+            ledStates[led] = true;
         }
         
         strip.show();
