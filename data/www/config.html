@@ -42,35 +42,40 @@
     </style>
 </head>
 <body>
-    <h2>Konfiguration</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <h2 id="titleText">Konfiguration</h2>
+        <label><span id="langLabel">Sprache:</span>
+            <select id="langSelect"><option value="de">DE</option><option value="en">EN</option></select>
+        </label>
+    </div>
     <div class="grid">
         <div class="card">
-            <h3>Einstellungen</h3>
+            <h3 id="settingsTitle">Einstellungen</h3>
             <div id="clockInfo">
-                <div>Aktuelle Uhrzeit: <strong id="currentTime">{{currentTime}}</strong></div>
-                <div>Zeit in Worten: <strong id="timeWords">{{timeWords}}</strong></div>
-                <div>Testmodus: <strong id="testMode">{{testMode}}</strong>, Erste LED: <strong id="firstLEDMode">{{firstLEDMode}}</strong></div>
+                <div><span id="lblCurrentTime">Aktuelle Uhrzeit:</span> <strong id="currentTime">{{currentTime}}</strong></div>
+                <div><span id="lblTimeWords">Zeit in Worten:</span> <strong id="timeWords">{{timeWords}}</strong></div>
+                <div><span id="lblTestMode">Testmodus:</span> <strong id="testMode">{{testMode}}</strong>, <span id="lblFirstLed">Erste LED:</span> <strong id="firstLEDMode">{{firstLEDMode}}</strong></div>
             </div>
             <div id="healthInfo">
-                <div>Netz: <strong id="healthWifi">-</strong></div>
+                <div><span id="lblNet">Netz:</span> <strong id="healthWifi">-</strong></div>
                 <div>IP: <strong id="healthIp">-</strong></div>
                 <div>RSSI: <strong id="healthRssi">-</strong></div>
                 <div>Heap: <strong id="healthHeap">-</strong></div>
-                <div>Uptime: <strong id="healthUptime">-</strong></div>
-                <div>Letzter WiFi-Event: <strong id="healthEvent">-</strong></div>
-                <div>Disconnect Grund: <strong id="healthDiscReason">-</strong></div>
+                <div><span id="lblUptime">Uptime:</span> <strong id="healthUptime">-</strong></div>
+                <div><span id="lblLastEvent">Letzter WiFi-Event:</span> <strong id="healthEvent">-</strong></div>
+                <div><span id="lblDiscReason">Disconnect Grund:</span> <strong id="healthDiscReason">-</strong></div>
             </div>
             <div class="row">
-                <button type="button" class="btn secondary" onclick="activateNormalTime()">Uhrzeitanzeige aktivieren</button>
+                <button id="btnNormalTime" type="button" class="btn secondary" onclick="activateNormalTime()">Uhrzeitanzeige aktivieren</button>
                 <div id="statusText"></div>
             </div>
             <form method="POST" action="/config">
                 <div class="row">
-                    <label>NTP-Server</label>
+                    <label id="lblNtp">NTP-Server</label>
                     <input name="ntpServer" value="{{ntpServer}}">
                 </div>
                 <div class="row">
-                    <label>Zeitzone (Stadt)</label>
+                    <label id="lblTimezone">Zeitzone (Stadt)</label>
                     <select id="timezoneCity" name="timezoneCity">
                         <option value="berlin">Berlin</option>
                         <option value="london">London</option>
@@ -83,23 +88,23 @@
                     </select>
                 </div>
                 <div class="row">
-                    <label>Helligkeit (1-10)</label>
+                    <label id="lblBrightness">Helligkeit (1-10)</label>
                     <input name="brightness" type="number" min="1" max="10" value="{{brightness}}">
                 </div>
                 <div class="row">
-                    <label>LED-Pin</label>
+                    <label id="lblLedPin">LED-Pin</label>
                     <input name="ledPin" type="number" value="{{ledPin}}">
                 </div>
                 <div class="row">
-                    <label>LEDs pro Reihe</label>
+                    <label id="lblLedsPerRow">LEDs pro Reihe</label>
                     <input name="ledsPerRow" type="number" value="{{ledsPerRow}}">
                 </div>
                 <div class="row">
-                    <label>Wortzeilen</label>
+                    <label id="lblWordRows">Wortzeilen</label>
                     <input name="wordRows" type="number" value="{{wordRows}}">
                 </div>
                 <div class="row">
-                    <label>LED-Startpunkt</label>
+                    <label id="lblOrigin">LED-Startpunkt</label>
                     <input type="hidden" id="ledOrigin" name="ledOrigin" value="{{ledOrigin}}">
                     <div class="origin-buttons">
                         <button type="button" class="origin-btn" data-origin="0" onclick="setLedOrigin(0)">Oben links</button>
@@ -109,28 +114,80 @@
                     </div>
                 </div>
                 <div class="row">
-                    <label>SSID</label>
+                    <label id="lblSsid">SSID</label>
                     <input name="ssid" value="{{ssid}}">
                 </div>
                 <div class="row">
-                    <label>Passwort</label>
+                    <label id="lblPassword">Passwort</label>
                     <input name="pass" type="password">
                 </div>
-                <button class="btn" type="submit">Speichern & Neustarten</button>
+                <button id="btnSaveReboot" class="btn" type="submit">Speichern & Neustarten</button>
             </form>
-            <p style="margin-top:12px"><a href="/">Zurück</a></p>
+            <p style="margin-top:12px"><a id="linkBack" href="/">Zurück</a></p>
         </div>
 
         <div class="card">
-            <h3>LED-Status (Live)</h3>
-            <p style="margin-top:0">Aktive LEDs werden gelb dargestellt.</p>
+            <h3 id="ledStatusTitle">LED-Status (Live)</h3>
+            <p id="ledStatusHint" style="margin-top:0">Aktive LEDs werden gelb dargestellt.</p>
             <div id="wordButtonsRows"></div>
-            <button type="button" class="btn small" onclick="clearWordSelection()">Wortauswahl löschen</button>
+            <button id="btnClearSelection" type="button" class="btn small" onclick="clearWordSelection()">Wortauswahl löschen</button>
             <div id="ledMatrix"></div>
         </div>
     </div>
 
     <script>
+        const I18N = {
+            de: {
+                lang: 'Sprache:', title: 'Konfiguration', settings: 'Einstellungen', currentTime: 'Aktuelle Uhrzeit:', timeWords: 'Zeit in Worten:',
+                testMode: 'Testmodus:', firstLed: 'Erste LED:', net: 'Netz:', uptime: 'Uptime:', lastEvent: 'Letzter WiFi-Event:', discReason: 'Disconnect Grund:',
+                normalTime: 'Uhrzeitanzeige aktivieren', ntp: 'NTP-Server', timezone: 'Zeitzone (Stadt)', brightness: 'Helligkeit (1-10)', ledPin: 'LED-Pin',
+                ledsPerRow: 'LEDs pro Reihe', wordRows: 'Wortzeilen', origin: 'LED-Startpunkt', password: 'Passwort', saveReboot: 'Speichern & Neustarten',
+                back: 'Zurück', ledStatus: 'LED-Status (Live)', ledHint: 'Aktive LEDs werden gelb dargestellt.', clearSelection: 'Wortauswahl löschen', row: 'Reihe',
+                originTopLeft: 'Oben links', originTopRight: 'Oben rechts', originBottomRight: 'Unten rechts', originBottomLeft: 'Unten links'
+            },
+            en: {
+                lang: 'Language:', title: 'Configuration', settings: 'Settings', currentTime: 'Current time:', timeWords: 'Time in words:',
+                testMode: 'Test mode:', firstLed: 'First LED:', net: 'Network:', uptime: 'Uptime:', lastEvent: 'Last Wi-Fi event:', discReason: 'Disconnect reason:',
+                normalTime: 'Activate normal time display', ntp: 'NTP server', timezone: 'Timezone (City)', brightness: 'Brightness (1-10)', ledPin: 'LED pin',
+                ledsPerRow: 'LEDs per row', wordRows: 'Word rows', origin: 'LED start point', password: 'Password', saveReboot: 'Save & Reboot',
+                back: 'Back', ledStatus: 'LED status (Live)', ledHint: 'Active LEDs are shown in yellow.', clearSelection: 'Clear word selection', row: 'Row',
+                originTopLeft: 'Top left', originTopRight: 'Top right', originBottomRight: 'Bottom right', originBottomLeft: 'Bottom left'
+            }
+        };
+        let currentLang = localStorage.getItem('wc_lang') || 'de';
+        function t(key) { return (I18N[currentLang] || I18N.de)[key] || key; }
+        function applyI18n() {
+            document.getElementById('langLabel').textContent = t('lang');
+            document.getElementById('titleText').textContent = t('title');
+            document.getElementById('settingsTitle').textContent = t('settings');
+            document.getElementById('lblCurrentTime').textContent = t('currentTime');
+            document.getElementById('lblTimeWords').textContent = t('timeWords');
+            document.getElementById('lblTestMode').textContent = t('testMode');
+            document.getElementById('lblFirstLed').textContent = t('firstLed');
+            document.getElementById('lblNet').textContent = t('net');
+            document.getElementById('lblUptime').textContent = t('uptime');
+            document.getElementById('lblLastEvent').textContent = t('lastEvent');
+            document.getElementById('lblDiscReason').textContent = t('discReason');
+            document.getElementById('btnNormalTime').textContent = t('normalTime');
+            document.getElementById('lblNtp').textContent = t('ntp');
+            document.getElementById('lblTimezone').textContent = t('timezone');
+            document.getElementById('lblBrightness').textContent = t('brightness');
+            document.getElementById('lblLedPin').textContent = t('ledPin');
+            document.getElementById('lblLedsPerRow').textContent = t('ledsPerRow');
+            document.getElementById('lblWordRows').textContent = t('wordRows');
+            document.getElementById('lblOrigin').textContent = t('origin');
+            document.getElementById('lblPassword').textContent = t('password');
+            document.getElementById('btnSaveReboot').textContent = t('saveReboot');
+            document.getElementById('linkBack').textContent = t('back');
+            document.getElementById('ledStatusTitle').textContent = t('ledStatus');
+            document.getElementById('ledStatusHint').textContent = t('ledHint');
+            document.getElementById('btnClearSelection').textContent = t('clearSelection');
+            document.getElementById('langSelect').value = currentLang;
+            document.querySelector('.origin-btn[data-origin="0"]').textContent = t('originTopLeft');
+            document.querySelector('.origin-btn[data-origin="1"]').textContent = t('originTopRight');
+            document.querySelector('.origin-btn[data-origin="3"]').textContent = t('originBottomRight');
+            document.querySelector('.origin-btn[data-origin="2"]').textContent = t('originBottomLeft');
+        }
         const LEDS_PER_ROW = 41;
         const WORD_ROWS = 10;
         const WORD_ROW_MAP = {
@@ -232,7 +289,7 @@
             for (let row = 0; row < WORD_ROWS; row++) {
                 const words = byRow[row];
                 if (!words.length) continue;
-                html += `<div class="word-row"><span class="word-row-label">Reihe ${row + 1}</span>`;
+                html += `<div class="word-row"><span class="word-row-label">${t('row')} ${row + 1}</span>`;
                 for (const word of words) {
                     const activeClass = selectedWords.has(word) ? 'active' : '';
                     html += `<button type="button" class="word-btn ${activeClass}" onclick="toggleWord('${word}')">${word}</button>`;
@@ -319,8 +376,16 @@
         }
 
         window.addEventListener('load', () => {
+            if (!I18N[currentLang]) currentLang = 'de';
+            document.getElementById('langSelect').addEventListener('change', (e) => {
+                currentLang = e.target.value;
+                localStorage.setItem('wc_lang', currentLang);
+                applyI18n();
+                renderWordButtons();
+            });
             setLedOrigin(parseInt('{{ledOrigin}}', 10) || 0);
             document.getElementById('timezoneCity').value = '{{timezoneCity}}';
+            applyI18n();
             loadWordMappings();
             updateInfo();
             updateHealth();

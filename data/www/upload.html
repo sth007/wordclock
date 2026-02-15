@@ -27,11 +27,16 @@
 </head>
 <body>
     <div class="container">
-        <h2>Wordclock Hintergrundbild Upload</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <h2 id="titleText">Wordclock Hintergrundbild Upload</h2>
+            <label><span id="langLabel">Sprache:</span>
+                <select id="langSelect"><option value="de">DE</option><option value="en">EN</option></select>
+            </label>
+        </div>
         
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-            <p style="font-size: 18px;">📸 Bild hier hinziehen oder klicken zum Auswählen</p>
-            <p style="font-size: 13px; color: #666;">JPG/PNG, max 500KB, empfohlen: 410×410px</p>
+            <p id="dropText" style="font-size: 18px;">📸 Bild hier hinziehen oder klicken zum Auswählen</p>
+            <p id="dropHint" style="font-size: 13px; color: #666;">JPG/PNG, max 500KB, empfohlen: 410×410px</p>
         </div>
         
         <input type="file" id="fileInput" accept="image/*">
@@ -46,23 +51,77 @@
         <div id="status" class="status" style="display:none;"></div>
         
         <div class="info">
-            <p><strong>ℹ️ Information:</strong></p>
-            <p>Das Bild wird als Hintergrund in der LED-Matrix angezeigt. Es sollte die Buchstaben/Wörter der Wordclock zeigen, damit du beim Konfigurieren weißt, welche LEDs zu welchem Buchstaben gehören.</p>
-            <p><strong>Empfehlungen:</strong></p>
+            <p><strong id="infoTitle">ℹ️ Information:</strong></p>
+            <p id="infoText">Das Bild wird als Hintergrund in der LED-Matrix angezeigt. Es sollte die Buchstaben/Wörter der Wordclock zeigen, damit du beim Konfigurieren weißt, welche LEDs zu welchem Buchstaben gehören.</p>
+            <p><strong id="recTitle">Empfehlungen:</strong></p>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>Bildgröße: 410×410 Pixel (41 LEDs × 10 Reihen × 1px pro LED)</li>
-                <li>Format: JPG oder PNG</li>
-                <li>Dateigröße: unter 500KB</li>
+                <li id="liSize">Bildgröße: 410×410 Pixel (41 LEDs × 10 Reihen × 1px pro LED)</li>
+                <li id="liFormat">Format: JPG oder PNG</li>
+                <li id="liFileSize">Dateigröße: unter 500KB</li>
             </ul>
         </div>
         
         <div class="nav">
-            <a href="/">← Zurück</a>
-            <a href="/status">LED Editor →</a>
+            <a id="linkBack" href="/">← Zurück</a>
+            <a id="linkEditor" href="/status">LED Editor →</a>
         </div>
     </div>
 
     <script>
+        const I18N = {
+            de: {
+                lang: 'Sprache:', title: 'Wordclock Hintergrundbild Upload',
+                drop: '📸 Bild hier hinziehen oder klicken zum Auswählen',
+                dropHint: 'JPG/PNG, max 500KB, empfohlen: 410×410px',
+                upload: 'Hochladen', remove: 'Löschen', uploading: 'Uploading...',
+                fileTooBig: 'Datei zu groß! Max. 500KB',
+                uploadOk: 'Bild erfolgreich hochgeladen! 🎉',
+                uploadFail: 'Fehler beim Upload: ',
+                infoTitle: 'ℹ️ Information:',
+                infoText: 'Das Bild wird als Hintergrund in der LED-Matrix angezeigt. Es sollte die Buchstaben/Wörter der Wordclock zeigen, damit du beim Konfigurieren weißt, welche LEDs zu welchem Buchstaben gehören.',
+                recTitle: 'Empfehlungen:',
+                liSize: 'Bildgröße: 410×410 Pixel (41 LEDs × 10 Reihen × 1px pro LED)',
+                liFormat: 'Format: JPG oder PNG',
+                liFileSize: 'Dateigröße: unter 500KB',
+                back: '← Zurück', editor: 'LED Editor →'
+            },
+            en: {
+                lang: 'Language:', title: 'Wordclock Background Image Upload',
+                drop: '📸 Drag image here or click to select',
+                dropHint: 'JPG/PNG, max 500KB, recommended: 410×410px',
+                upload: 'Upload', remove: 'Clear', uploading: 'Uploading...',
+                fileTooBig: 'File too large! Max. 500KB',
+                uploadOk: 'Image uploaded successfully! 🎉',
+                uploadFail: 'Upload failed: ',
+                infoTitle: 'ℹ️ Information:',
+                infoText: 'The image is shown as background in the LED matrix. It should contain the Wordclock letters/words so LED mapping is easier.',
+                recTitle: 'Recommendations:',
+                liSize: 'Image size: 410×410 pixels (41 LEDs × 10 rows × 1px per LED)',
+                liFormat: 'Format: JPG or PNG',
+                liFileSize: 'File size: under 500KB',
+                back: '← Back', editor: 'LED Editor →'
+            }
+        };
+        let currentLang = localStorage.getItem('wc_lang') || 'de';
+        function tt() { return I18N[currentLang] || I18N.de; }
+        function applyI18n() {
+            const t = tt();
+            document.getElementById('langLabel').textContent = t.lang;
+            document.getElementById('titleText').textContent = t.title;
+            document.getElementById('dropText').textContent = t.drop;
+            document.getElementById('dropHint').textContent = t.dropHint;
+            document.getElementById('uploadBtn').textContent = t.upload;
+            document.getElementById('clearBtn').textContent = t.remove;
+            document.getElementById('infoTitle').textContent = t.infoTitle;
+            document.getElementById('infoText').textContent = t.infoText;
+            document.getElementById('recTitle').textContent = t.recTitle;
+            document.getElementById('liSize').textContent = t.liSize;
+            document.getElementById('liFormat').textContent = t.liFormat;
+            document.getElementById('liFileSize').textContent = t.liFileSize;
+            document.getElementById('linkBack').textContent = t.back;
+            document.getElementById('linkEditor').textContent = t.editor;
+            document.getElementById('langSelect').value = currentLang;
+        }
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const preview = document.getElementById('preview');
@@ -97,7 +156,7 @@
             if (!file) return;
 
             if (file.size > 500 * 1024) {
-                showStatus('Datei zu groß! Max. 500KB', 'error');
+                showStatus(tt().fileTooBig, 'error');
                 return;
             }
 
@@ -116,7 +175,7 @@
             if (!file) return;
 
             uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Uploading...';
+            uploadBtn.textContent = tt().uploading;
 
             const formData = new FormData();
             formData.append('image', file);
@@ -127,13 +186,13 @@
             })
             .then(response => response.text())
             .then(data => {
-                showStatus('Bild erfolgreich hochgeladen! 🎉', 'success');
-                uploadBtn.textContent = 'Hochladen';
+                showStatus(tt().uploadOk, 'success');
+                uploadBtn.textContent = tt().upload;
                 uploadBtn.disabled = false;
             })
             .catch(error => {
-                showStatus('Fehler beim Upload: ' + error, 'error');
-                uploadBtn.textContent = 'Hochladen';
+                showStatus(tt().uploadFail + error, 'error');
+                uploadBtn.textContent = tt().upload;
                 uploadBtn.disabled = false;
             });
         }
@@ -151,6 +210,12 @@
             statusDiv.className = `status ${type}`;
             statusDiv.style.display = 'block';
         }
+        document.getElementById('langSelect').addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            localStorage.setItem('wc_lang', currentLang);
+            applyI18n();
+        });
+        applyI18n();
     </script>
 </body>
 </html>

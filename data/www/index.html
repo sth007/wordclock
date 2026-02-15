@@ -7,27 +7,58 @@
 </head>
 
 <body style="font-family:sans-serif; max-width:520px; margin:40px auto;">
-    <h2>WLAN einrichten</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2 id="titleText">WLAN einrichten</h2>
+        <label><span id="langLabel">Sprache:</span>
+            <select id="langSelect"><option value="de">DE</option><option value="en">EN</option></select>
+        </label>
+    </div>
 
     <form method="POST" action="/save">
-        <label>SSID</label><br>
+        <label id="lblSsid">SSID</label><br>
         <input name="ssid" style="width:100%;padding:10px" required><br><br>
 
-        <label>Passwort</label><br>
+        <label id="lblPassword">Passwort</label><br>
         <input name="pass" type="password" style="width:100%;padding:10px"><br><br>
 
-        <button type="submit" style="padding:10px 18px">Speichern & Neustarten</button>
+        <button id="btnSaveReboot" type="submit" style="padding:10px 18px">Speichern & Neustarten</button>
     </form>
 
     <form method="POST" action="/brightness">
-        <label>Helligkeit (1-10)</label><br>
+        <label id="lblBrightness">Helligkeit (1-10)</label><br>
         <input name="brightness" type="number" min="1" max="10" value="10" style="width:100%;padding:10px"><br><br>
-        <button type="submit" style="padding:10px 18px">Setzen</button>
+        <button id="btnSet" type="submit" style="padding:10px 18px">Setzen</button>
     </form>
 
     <p style="opacity:0.7;margin-top:18px">
-        <a href="/config">Konfiguration</a> | <a href="/ota">OTA aktivieren</a> | <a href="/reboot">Neustart</a>
+        <a id="linkConfig" href="/config">Konfiguration</a> | <a id="linkOta" href="/ota">OTA aktivieren</a> | <a id="linkReboot" href="/reboot">Neustart</a>
     </p>
+    <script>
+        const I18N = {
+            de: { lang: 'Sprache:', title: 'WLAN einrichten', password: 'Passwort', saveReboot: 'Speichern & Neustarten', brightness: 'Helligkeit (1-10)', set: 'Setzen', config: 'Konfiguration', ota: 'OTA aktivieren', reboot: 'Neustart' },
+            en: { lang: 'Language:', title: 'Wi-Fi setup', password: 'Password', saveReboot: 'Save & Reboot', brightness: 'Brightness (1-10)', set: 'Apply', config: 'Configuration', ota: 'Enable OTA', reboot: 'Reboot' }
+        };
+        let currentLang = localStorage.getItem('wc_lang') || 'de';
+        function applyI18n() {
+            const t = I18N[currentLang] || I18N.de;
+            document.getElementById('langLabel').textContent = t.lang;
+            document.getElementById('titleText').textContent = t.title;
+            document.getElementById('lblPassword').textContent = t.password;
+            document.getElementById('btnSaveReboot').textContent = t.saveReboot;
+            document.getElementById('lblBrightness').textContent = t.brightness;
+            document.getElementById('btnSet').textContent = t.set;
+            document.getElementById('linkConfig').textContent = t.config;
+            document.getElementById('linkOta').textContent = t.ota;
+            document.getElementById('linkReboot').textContent = t.reboot;
+            document.getElementById('langSelect').value = currentLang;
+        }
+        document.getElementById('langSelect').addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            localStorage.setItem('wc_lang', currentLang);
+            applyI18n();
+        });
+        applyI18n();
+    </script>
 </body>
 
 </html>

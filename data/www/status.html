@@ -34,60 +34,150 @@
         .testButtons a { padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 13px; }
         .testButtons a:hover { opacity: 0.8; }
         .testButtons a.disabled { background: #9ca3af; pointer-events: none; cursor: not-allowed; opacity: 0.7; }
+        .topBar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        #langSelect { padding: 6px 8px; }
     </style>
 </head>
 <body>
-    <h2>Wordclock LED Editor</h2>
-    <p><strong>Aktuelle Uhrzeit:</strong> {{currentTime}} | <strong>Helligkeit:</strong> {{brightness}}/10 | <strong>IP:</strong> {{ipAddress}}</p>
+    <div class="topBar">
+        <h2 id="titleText">Wordclock LED Editor</h2>
+        <label><span id="langLabel">Sprache:</span>
+            <select id="langSelect"><option value="de">DE</option><option value="en">EN</option></select>
+        </label>
+    </div>
+    <p><strong id="lblTime">Aktuelle Uhrzeit:</strong> {{currentTime}} | <strong id="lblBrightness">Helligkeit:</strong> {{brightness}}/10 | <strong>IP:</strong> {{ipAddress}}</p>
     
-    <h3>LED-Matrix Editor</h3>
-    <p>Wort auswählen zum Highlighten (rote Zellen), dann anklicken um zu editieren:</p>
+    <h3 id="matrixTitle">LED-Matrix Editor</h3>
+    <p id="matrixHint">Wort auswählen zum Highlighten (rote Zellen), dann anklicken um zu editieren:</p>
     
     <div id="wordButtons"></div>
     
     <div id="matrixContainer">
         <div id="ledMatrixWrapper">
             <div id="backgroundUpload">
-                <label for="bgFile"><strong>Hintergrundbild:</strong></label>
+                <label for="bgFile"><strong id="lblBackground">Hintergrundbild:</strong></label>
                 <input type="file" id="bgFile" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
-                <button type="button" onclick="uploadBackgroundImage()">Bild hochladen</button>
+                <button id="btnUploadBg" type="button" onclick="uploadBackgroundImage()">Bild hochladen</button>
                 <span id="bgUploadStatus"></span>
             </div>
             <div id="ledMatrix"></div>
             
             <div id="editMode">
-                <h4>Bearbeitungsmodus</h4>
+                <h4 id="editModeTitle">Bearbeitungsmodus</h4>
                 <p id="selectedWord">Wort: <strong>Keine Auswahl</strong></p>
                 <p id="selectedLeds">LEDs: <strong>-</strong></p>
                 <p id="saveStatus">Auto-Save: <strong>inaktiv</strong></p>
-                <button onclick="clearSelectedLeds()">LEDs löschen</button>
-                <button onclick="randomSelectLeds()">Zufällig auswählen</button>
-                <button onclick="cancelEdit()">Abbrechen</button>
+                <button id="btnClearLeds" onclick="clearSelectedLeds()">LEDs löschen</button>
+                <button id="btnRandomLeds" onclick="randomSelectLeds()">Zufällig auswählen</button>
+                <button id="btnCancelEdit" onclick="cancelEdit()">Abbrechen</button>
             </div>
         </div>
         
         <div id="info">
-            <h4>Status</h4>
-            <p><strong>Test-Modus:</strong> {{testMode}}</p>
-            <p><strong>Erste LED:</strong> {{firstLEDMode}}</p>
+            <h4 id="statusTitle">Status</h4>
+            <p><strong id="lblTestMode">Test-Modus:</strong> {{testMode}}</p>
+            <p><strong id="lblFirstLed">Erste LED:</strong> {{firstLEDMode}}</p>
             <p><strong>NTP-Server:</strong> {{ntpServer}}</p>
             <p><strong>GMT Offset:</strong> {{gmtOffset}}h</p>
             
-            <h4 style="margin-top: 15px;">Test-Funktionen</h4>
+            <h4 id="testFunctionsTitle" style="margin-top: 15px;">Test-Funktionen</h4>
             <div class="testButtons">
                 <a href="/test" class="testAction">LED-Test {{testToggle}}</a>
-                <a href="/testfirst" class="testAction">Erste LED</a>
-                <a href="/testallatonce" class="testAction">Alle Wörter</a>
+                <a id="linkTestFirst" href="/testfirst" class="testAction">Erste LED</a>
+                <a id="linkAllWords" href="/testallatonce" class="testAction">Alle Wörter</a>
             </div>
             
             <div class="testButtons" style="margin-top: 10px;">
-                <a href="/config">Konfiguration</a>
-                <a href="/reboot">Neustart</a>
+                <a id="linkConfig" href="/config">Konfiguration</a>
+                <a id="linkReboot" href="/reboot">Neustart</a>
             </div>
         </div>
     </div>
 
     <script>
+        const I18N = {
+            de: {
+                lang: 'Sprache:',
+                title: 'Wordclock LED Editor',
+                time: 'Aktuelle Uhrzeit:',
+                brightness: 'Helligkeit:',
+                matrixTitle: 'LED-Matrix Editor',
+                matrixHint: 'Wort auswählen zum Highlighten (rote Zellen), dann anklicken um zu editieren:',
+                background: 'Hintergrundbild:',
+                uploadBg: 'Bild hochladen',
+                editMode: 'Bearbeitungsmodus',
+                clearLeds: 'LEDs löschen',
+                random: 'Zufällig auswählen',
+                cancel: 'Abbrechen',
+                status: 'Status',
+                testMode: 'Test-Modus:',
+                firstLed: 'Erste LED:',
+                testFunctions: 'Test-Funktionen',
+                testFirst: 'Erste LED',
+                allWords: 'Alle Wörter',
+                config: 'Konfiguration',
+                reboot: 'Neustart',
+                row: 'Reihe',
+                word: 'Wort',
+                noSelection: 'Keine Auswahl',
+                chooseWord: 'Bitte wähle zuerst ein Wort!',
+                rowOnly: 'Bitte nur LEDs in Reihe {row} bearbeiten.',
+                autoSave: 'Auto-Save',
+                autoSaveActive: 'aktiv',
+                autoSaveInactive: 'inaktiv',
+                autoSaveSending: 'wird an ESP32 gesendet...',
+                autoSaveSaved: 'gespeichert',
+                autoSaveMinOne: 'nicht gespeichert (mindestens 1 LED erforderlich)',
+                chooseFile: 'Bitte zuerst Datei wählen.',
+                uploading: 'Upload läuft...',
+                uploadFailed: 'Upload fehlgeschlagen',
+                apiUnavailable: 'API nicht erreichbar'
+            },
+            en: {
+                lang: 'Language:',
+                title: 'Wordclock LED Editor',
+                time: 'Current time:',
+                brightness: 'Brightness:',
+                matrixTitle: 'LED Matrix Editor',
+                matrixHint: 'Select a word to highlight (red cells), then click LEDs to edit:',
+                background: 'Background image:',
+                uploadBg: 'Upload image',
+                editMode: 'Edit mode',
+                clearLeds: 'Clear LEDs',
+                random: 'Random select',
+                cancel: 'Cancel',
+                status: 'Status',
+                testMode: 'Test mode:',
+                firstLed: 'First LED:',
+                testFunctions: 'Test functions',
+                testFirst: 'First LED',
+                allWords: 'All words',
+                config: 'Configuration',
+                reboot: 'Reboot',
+                row: 'Row',
+                word: 'Word',
+                noSelection: 'No selection',
+                chooseWord: 'Please select a word first!',
+                rowOnly: 'Please edit LEDs only in row {row}.',
+                autoSave: 'Auto-save',
+                autoSaveActive: 'active',
+                autoSaveInactive: 'inactive',
+                autoSaveSending: 'sending to ESP32...',
+                autoSaveSaved: 'saved',
+                autoSaveMinOne: 'not saved (at least 1 LED required)',
+                chooseFile: 'Please select a file first.',
+                uploading: 'Uploading...',
+                uploadFailed: 'Upload failed',
+                apiUnavailable: 'API unavailable'
+            }
+        };
+        let currentLang = localStorage.getItem('wc_lang') || 'de';
+        function t(key, params = {}) {
+            const dict = I18N[currentLang] || I18N.de;
+            let value = dict[key] || key;
+            for (const [k, v] of Object.entries(params)) value = value.replace(`{${k}}`, String(v));
+            return value;
+        }
         const defaultWords = {
             'ES': [0, 1, 2, 3], 'IST': [6, 7, 8, 9, 10, 11], 'FUENF': [15, 16, 17, 18, 19, 20, 21, 22],
             'ZEHN': [0, 1, 2, 3, 4, 5, 6, 7, 8], 'ZWANZIG': [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
@@ -144,7 +234,7 @@
             let h = '';
             for (let row = 0; row < rows.length; row++) {
                 if (rows[row].length === 0) continue;
-                h += `<div class="wordRow"><span class="rowLabel">Reihe ${row + 1}</span>`;
+                h += `<div class="wordRow"><span class="rowLabel">${t('row')} ${row + 1}</span>`;
                 for (const word of rows[row]) {
                     h += `<button class="wordBtn" data-word="${word}" onclick="selectWord('${word}')">${word}</button>`;
                 }
@@ -170,10 +260,37 @@
             document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
             document.querySelector(`[data-word="${w}"]`).classList.add('selected');
             updateMatrixHighlight();
-            document.getElementById('selectedWord').innerHTML = `Wort: <strong>${w}</strong>`;
+            document.getElementById('selectedWord').innerHTML = `${t('word')}: <strong>${w}</strong>`;
             document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
-            setSaveStatus('Auto-Save aktiv');
+            setSaveStatus(t('autoSaveActive'));
             previewWords([w]).catch(() => {});
+        }
+        function applyI18n() {
+            document.getElementById('langLabel').textContent = t('lang');
+            document.getElementById('titleText').textContent = t('title');
+            document.getElementById('lblTime').textContent = t('time');
+            document.getElementById('lblBrightness').textContent = t('brightness');
+            document.getElementById('matrixTitle').textContent = t('matrixTitle');
+            document.getElementById('matrixHint').textContent = t('matrixHint');
+            document.getElementById('lblBackground').textContent = t('background');
+            document.getElementById('btnUploadBg').textContent = t('uploadBg');
+            document.getElementById('editModeTitle').textContent = t('editMode');
+            document.getElementById('btnClearLeds').textContent = t('clearLeds');
+            document.getElementById('btnRandomLeds').textContent = t('random');
+            document.getElementById('btnCancelEdit').textContent = t('cancel');
+            document.getElementById('statusTitle').textContent = t('status');
+            document.getElementById('lblTestMode').textContent = t('testMode');
+            document.getElementById('lblFirstLed').textContent = t('firstLed');
+            document.getElementById('testFunctionsTitle').textContent = t('testFunctions');
+            document.getElementById('linkTestFirst').textContent = t('testFirst');
+            document.getElementById('linkAllWords').textContent = t('allWords');
+            document.getElementById('linkConfig').textContent = t('config');
+            document.getElementById('linkReboot').textContent = t('reboot');
+            document.getElementById('langSelect').value = currentLang;
+            document.getElementById('selectedWord').innerHTML = editingWord
+                ? `${t('word')}: <strong>${editingWord}</strong>`
+                : `${t('word')}: <strong>${t('noSelection')}</strong>`;
+            initWordButtons();
         }
         function setTestButtonsDisabled(disabled) {
             testButtonsDisabled = !!disabled;
@@ -220,12 +337,12 @@
             editorHeartbeatTimer = null;
         }
         function setSaveStatus(text) {
-            document.getElementById('saveStatus').innerHTML = `Auto-Save: <strong>${text}</strong>`;
+            document.getElementById('saveStatus').innerHTML = `${t('autoSave')}: <strong>${text}</strong>`;
         }
         async function queueAutoSave() {
             if (!editingWord) return;
             if (selectedLeds.length === 0) {
-                setSaveStatus('nicht gespeichert (mindestens 1 LED erforderlich)');
+                setSaveStatus(t('autoSaveMinOne'));
                 visualState = 'error';
                 visualWord = editingWord;
                 visualLeds = [];
@@ -236,7 +353,7 @@
             visualState = 'pending';
             visualWord = queuedSave.word;
             visualLeds = [...queuedSave.leds];
-            setSaveStatus('wird an ESP32 gesendet...');
+            setSaveStatus(t('autoSaveSending'));
             updateMatrixHighlight();
             await processSaveQueue();
         }
@@ -266,7 +383,7 @@
                     visualState = 'confirmed';
                     visualWord = saveJob.word;
                     visualLeds = [...saveJob.leds];
-                    setSaveStatus(`gespeichert (${saveJob.word})`);
+                    setSaveStatus(`${t('autoSaveSaved')} (${saveJob.word})`);
 
                     if (confirmTimer) clearTimeout(confirmTimer);
                     confirmTimer = setTimeout(() => {
@@ -312,11 +429,11 @@
             });
         }
         function toggleLED(i) {
-            if (!editingWord) { alert('Bitte wähle zuerst ein Wort!'); return; }
+            if (!editingWord) { alert(t('chooseWord')); return; }
             const row = wordRows[editingWord];
             const cellRow = Math.floor(i / 41);
             const cellCol = i % 41;
-            if (cellRow !== row) { alert(`Bitte nur LEDs in Reihe ${row + 1} bearbeiten.`); return; }
+            if (cellRow !== row) { alert(t('rowOnly', { row: row + 1 })); return; }
             selectedLeds = selectedLeds.includes(cellCol) ? selectedLeds.filter(x => x !== cellCol) : [...selectedLeds, cellCol];
             selectedLeds.sort((a, b) => a - b);
             updateMatrixHighlight();
@@ -370,10 +487,10 @@
             stopEditorHeartbeat();
             setEditorLock(false);
             document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
-            document.getElementById('selectedWord').innerHTML = 'Wort: <strong>Keine Auswahl</strong>';
+            document.getElementById('selectedWord').innerHTML = `${t('word')}: <strong>${t('noSelection')}</strong>`;
             document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>';
             setTestButtonsDisabled(false);
-            setSaveStatus('inaktiv');
+            setSaveStatus(t('autoSaveInactive'));
             updateMatrixHighlight();
             previewWords([]).catch(() => {});
         }
@@ -381,17 +498,17 @@
             const input = document.getElementById('bgFile');
             const status = document.getElementById('bgUploadStatus');
             if (!input.files || input.files.length === 0) {
-                status.textContent = 'Bitte zuerst Datei wählen.';
+                status.textContent = t('chooseFile');
                 return;
             }
             const file = input.files[0];
             const formData = new FormData();
             formData.append('image', file);
-            status.textContent = 'Upload läuft...';
+            status.textContent = t('uploading');
             fetch('/upload-bg', { method: 'POST', body: formData })
                 .then(async (response) => {
                     const text = await response.text();
-                    if (!response.ok) throw new Error(text || 'Upload fehlgeschlagen');
+                    if (!response.ok) throw new Error(text || t('uploadFailed'));
                     status.textContent = text;
                     refreshBackgroundImage();
                 })
@@ -400,7 +517,7 @@
         function loadWordMappings() {
             return fetch('/api/words')
                 .then((r) => {
-                    if (!r.ok) throw new Error('API nicht erreichbar');
+                    if (!r.ok) throw new Error(t('apiUnavailable'));
                     return r.json();
                 })
                 .then((data) => {
@@ -412,12 +529,19 @@
         }
 
         window.addEventListener('load', () => {
+            if (!I18N[currentLang]) currentLang = 'de';
+            document.getElementById('langSelect').addEventListener('change', (event) => {
+                currentLang = event.target.value;
+                localStorage.setItem('wc_lang', currentLang);
+                applyI18n();
+            });
             document.querySelectorAll('.testAction').forEach((link) => {
                 link.addEventListener('click', (event) => {
                     if (!testButtonsDisabled) return;
                     event.preventDefault();
                 });
             });
+            applyI18n();
             refreshBackgroundImage();
             loadWordMappings().then(() => {
                 initWordButtons();
