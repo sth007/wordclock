@@ -20,10 +20,14 @@
         #ledMatrix td:hover { background-color: #ccc; }
         #ledMatrix td.active { background-color: rgba(255, 255, 0, 0.85); color: #000; }
         #ledMatrix td.highlight { background-color: rgba(255, 90, 90, 0.85); box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.5); }
+        #ledMatrix td.pending { background-color: rgba(255, 150, 150, 0.92); box-shadow: inset 0 0 5px rgba(255, 80, 80, 0.7); }
+        #ledMatrix td.confirmed { background-color: rgba(255, 90, 90, 0.85); box-shadow: inset 0 0 6px rgba(210, 0, 0, 0.75); }
+        #ledMatrix td.error { background-color: rgba(255, 120, 120, 0.95); box-shadow: inset 0 0 6px rgba(170, 0, 0, 0.85); }
         #ledMatrix th.colHeader { width: 20px; height: 18px; font-size: 10px; font-weight: 600; color: #666; text-align: center; border: 1px solid transparent; }
         #info { flex: 0 0 250px; padding: 15px; background: #f9f9f9; border-radius: 4px; border: 1px solid #ddd; }
         #info p { margin: 8px 0; font-size: 13px; }
         #editMode { margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 4px; }
+        #saveStatus { margin: 8px 0 0 0; font-size: 13px; color: #374151; }
         button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 5px 5px 5px 0; }
         button:hover { background: #0056b3; }
         .testButtons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
@@ -54,9 +58,9 @@
                 <h4>Bearbeitungsmodus</h4>
                 <p id="selectedWord">Wort: <strong>Keine Auswahl</strong></p>
                 <p id="selectedLeds">LEDs: <strong>-</strong></p>
+                <p id="saveStatus">Auto-Save: <strong>inaktiv</strong></p>
                 <button onclick="clearSelectedLeds()">LEDs löschen</button>
                 <button onclick="randomSelectLeds()">Zufällig auswählen</button>
-                <button onclick="updateWordDefinition()">Speichern</button>
                 <button onclick="cancelEdit()">Abbrechen</button>
             </div>
         </div>
@@ -94,6 +98,12 @@
         };
         let words = {};
         let selectedLeds = [], editingWord = null;
+        let queuedSave = null;
+        let inFlightSave = null;
+        let visualState = 'idle';
+        let visualWord = null;
+        let visualLeds = [];
+        let confirmTimer = null;
         const wordOrder = [
             'ES', 'IST', 'FUENF', 'ZEHN', 'ZWANZIG', 'DREI', 'VIERTEL', 'VOR', 'NACH', 'HALB',
             'ELF', 'FUENF_H', 'EINS', 'ZWEI', 'DREI_H', 'VIER', 'SECHS', 'ACHT', 'SIEBEN',
@@ -156,16 +166,97 @@
             updateMatrixHighlight();
             document.getElementById('selectedWord').innerHTML = `Wort: <strong>${w}</strong>`;
             document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
+            setSaveStatus('Auto-Save aktiv');
             previewWords([w]).catch(() => {});
+        }
+        function setSaveStatus(text) {
+            document.getElementById('saveStatus').innerHTML = `Auto-Save: <strong>${text}</strong>`;
+        }
+        async function queueAutoSave() {
+            if (!editingWord) return;
+            if (selectedLeds.length === 0) {
+                setSaveStatus('nicht gespeichert (mindestens 1 LED erforderlich)');
+                visualState = 'error';
+                visualWord = editingWord;
+                visualLeds = [];
+                updateMatrixHighlight();
+                return;
+            }
+            queuedSave = { word: editingWord, leds: [...selectedLeds] };
+            visualState = 'pending';
+            visualWord = queuedSave.word;
+            visualLeds = [...queuedSave.leds];
+            setSaveStatus('wird an ESP32 gesendet...');
+            updateMatrixHighlight();
+            await processSaveQueue();
+        }
+        async function processSaveQueue() {
+            if (inFlightSave || !queuedSave) return;
+            const saveJob = queuedSave;
+            queuedSave = null;
+            inFlightSave = saveJob;
+
+            const body = new URLSearchParams();
+            body.set('word', saveJob.word);
+            body.set('leds', saveJob.leds.join(','));
+
+            try {
+                const response = await fetch('/api/word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+                const text = await response.text();
+                if (!response.ok) throw new Error(text || 'Speichern fehlgeschlagen');
+
+                words[saveJob.word] = [...saveJob.leds];
+                if (!queuedSave) {
+                    visualState = 'confirmed';
+                    visualWord = saveJob.word;
+                    visualLeds = [...saveJob.leds];
+                    setSaveStatus(`gespeichert (${saveJob.word})`);
+
+                    if (confirmTimer) clearTimeout(confirmTimer);
+                    confirmTimer = setTimeout(() => {
+                        if (visualState === 'confirmed') {
+                            visualState = 'idle';
+                            updateMatrixHighlight();
+                        }
+                    }, 700);
+                }
+                updateMatrixHighlight();
+            } catch (err) {
+                visualState = 'error';
+                visualWord = saveJob.word;
+                visualLeds = [...saveJob.leds];
+                setSaveStatus(`Fehler: ${err.message}`);
+                updateMatrixHighlight();
+            } finally {
+                inFlightSave = null;
+                if (queuedSave) processSaveQueue();
+            }
         }
         function updateMatrixHighlight() {
             const row = wordRows[editingWord];
             document.querySelectorAll('#ledMatrix td').forEach(c => {
-                c.classList.remove('highlight');
+                c.classList.remove('highlight', 'pending', 'confirmed', 'error');
                 const idx = parseInt(c.dataset.index, 10);
                 const cellRow = Math.floor(idx / 41);
                 const cellCol = idx % 41;
-                if (editingWord && cellRow === row && selectedLeds.includes(cellCol)) c.classList.add('highlight');
+                if (!editingWord || cellRow !== row || !selectedLeds.includes(cellCol)) return;
+                if (visualState === 'pending' && visualWord === editingWord && visualLeds.includes(cellCol)) {
+                    c.classList.add('pending');
+                    return;
+                }
+                if (visualState === 'confirmed' && visualWord === editingWord && visualLeds.includes(cellCol)) {
+                    c.classList.add('confirmed');
+                    return;
+                }
+                if (visualState === 'error' && visualWord === editingWord && visualLeds.includes(cellCol)) {
+                    c.classList.add('error');
+                    return;
+                }
+                c.classList.add('highlight');
             });
         }
         function toggleLED(i) {
@@ -178,6 +269,7 @@
             selectedLeds.sort((a, b) => a - b);
             updateMatrixHighlight();
             document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
+            queueAutoSave();
         }
         function updateMatrix() {
             fetch('/api/leds').then(r => r.json()).then(leds => {
@@ -197,37 +289,35 @@
                 }
                 h += '</table>';
                 document.getElementById('ledMatrix').innerHTML = h;
+                updateMatrixHighlight();
             });
         }
-        function clearSelectedLeds() { selectedLeds = []; updateMatrixHighlight(); document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>'; }
-        function randomSelectLeds() { selectedLeds = []; for (let i = 0; i < Math.floor(Math.random() * 8 + 4); i++) selectedLeds.push(Math.floor(Math.random() * 41)); selectedLeds = [...new Set(selectedLeds)].sort((a, b) => a - b); updateMatrixHighlight(); document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`; }
-        function updateWordDefinition() {
-            if (!editingWord) { alert('Kein Wort ausgewählt!'); return; }
-            if (selectedLeds.length === 0) { alert('Bitte mindestens eine LED auswählen.'); return; }
-
-            const body = new URLSearchParams();
-            body.set('word', editingWord);
-            body.set('leds', selectedLeds.join(','));
-
-            fetch('/api/word', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: body.toString()
-            })
-            .then(async (response) => {
-                const text = await response.text();
-                if (!response.ok) throw new Error(text || 'Speichern fehlgeschlagen');
-                words[editingWord] = [...selectedLeds];
-                alert(`Gespeichert: ${editingWord} -> ${selectedLeds.join(', ')}`);
-            })
-            .catch((err) => alert('Fehler beim Speichern: ' + err.message));
+        function clearSelectedLeds() {
+            selectedLeds = [];
+            updateMatrixHighlight();
+            document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>';
+            queueAutoSave();
+        }
+        function randomSelectLeds() {
+            selectedLeds = [];
+            for (let i = 0; i < Math.floor(Math.random() * 8 + 4); i++) selectedLeds.push(Math.floor(Math.random() * 41));
+            selectedLeds = [...new Set(selectedLeds)].sort((a, b) => a - b);
+            updateMatrixHighlight();
+            document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
+            queueAutoSave();
         }
         function cancelEdit() {
             editingWord = null;
             selectedLeds = [];
+            queuedSave = null;
+            visualState = 'idle';
+            visualWord = null;
+            visualLeds = [];
+            if (confirmTimer) clearTimeout(confirmTimer);
             document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
             document.getElementById('selectedWord').innerHTML = 'Wort: <strong>Keine Auswahl</strong>';
             document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>';
+            setSaveStatus('inaktiv');
             updateMatrixHighlight();
             previewWords([]).catch(() => {});
         }
