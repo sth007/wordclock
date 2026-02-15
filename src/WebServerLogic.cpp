@@ -18,6 +18,8 @@ extern int daylightOffset_sec;
 extern String timezoneCity;
 extern bool testMode;
 extern bool firstLEDMode;
+extern bool wordEditorActive;
+extern unsigned long wordEditorLastActivityMs;
 extern String ssid;
 extern String pass;
 extern int currentHour;
@@ -500,6 +502,10 @@ namespace WebServerLogic
         // LED-Test umschalten
         server.on("/test", HTTP_GET, [&](AsyncWebServerRequest *request)
                   {
+      if (wordEditorActive) {
+        request->send(409, "text/plain", "Word-Editor aktiv: Testmodus waehrend Bearbeitung gesperrt");
+        return;
+      }
       ::testMode = !::testMode;
       if (::testMode) ::firstLEDMode = false; // Deaktiviere anderen Test
       prefs.begin("settings", false);
@@ -517,6 +523,10 @@ namespace WebServerLogic
         // Erste LED-Test umschalten
         server.on("/testfirst", HTTP_GET, [&](AsyncWebServerRequest *request)
                   {
+      if (wordEditorActive) {
+        request->send(409, "text/plain", "Word-Editor aktiv: Testmodus waehrend Bearbeitung gesperrt");
+        return;
+      }
       ::firstLEDMode = !::firstLEDMode;
       if (::firstLEDMode) ::testMode = false; // Deaktiviere anderen Test
       prefs.begin("settings", false);
@@ -534,6 +544,10 @@ namespace WebServerLogic
         // Alle Wörter gleichzeitig Test
         server.on("/testallatonce", HTTP_GET, [&](AsyncWebServerRequest *request)
                   {
+      if (wordEditorActive) {
+        request->send(409, "text/plain", "Word-Editor aktiv: Testmodus waehrend Bearbeitung gesperrt");
+        return;
+      }
       showAllWordsAtOnce();
       request->send(200, "text/plain", "Alle Wörter leuchten!");
       request->redirect("/"); });
@@ -548,6 +562,10 @@ namespace WebServerLogic
         // Normale Uhrzeitanzeige aktivieren (beide Testmodi aus)
         server.on("/normaltime", HTTP_GET, [&](AsyncWebServerRequest *request)
                   {
+      if (wordEditorActive) {
+        request->send(409, "text/plain", "Word-Editor aktiv: Uhrzeitanzeige waehrend Bearbeitung gesperrt");
+        return;
+      }
       ::testMode = false;
       ::firstLEDMode = false;
       prefs.begin("settings", false);
@@ -641,7 +659,8 @@ namespace WebServerLogic
         json += "\"currentTime\":\"" + processor("currentTime") + "\",";
         json += "\"timeWords\":\"" + processor("timeWords") + "\",";
         json += "\"testMode\":" + String(::testMode ? "true" : "false") + ",";
-        json += "\"firstLEDMode\":" + String(::firstLEDMode ? "true" : "false");
+        json += "\"firstLEDMode\":" + String(::firstLEDMode ? "true" : "false") + ",";
+        json += "\"wordEditorActive\":" + String(::wordEditorActive ? "true" : "false");
         json += "}";
         request->send(200, "application/json", json);
     });
@@ -671,6 +690,8 @@ namespace WebServerLogic
             request->send(500, "text/plain", "LittleFS init fehlgeschlagen");
             return;
         }
+        wordEditorActive = true;
+        wordEditorLastActivityMs = millis();
 
         if (!request->hasParam("word", true) || !request->hasParam("leds", true)) {
             request->send(400, "text/plain", "Parameter 'word' und 'leds' erforderlich");
@@ -705,6 +726,35 @@ namespace WebServerLogic
         request->send(200, "text/plain", "Gespeichert");
     });
 
+    server.on("/api/editor-lock", HTTP_POST, [&](AsyncWebServerRequest *request) {
+        bool active = false;
+        if (request->hasParam("active", true)) {
+            String value = request->getParam("active", true)->value();
+            value.trim();
+            value.toLowerCase();
+            active = (value == "1" || value == "true" || value == "on");
+        }
+
+        wordEditorActive = active;
+        wordEditorLastActivityMs = millis();
+
+        ::testMode = false;
+        ::firstLEDMode = false;
+        prefs.begin("settings", false);
+        prefs.putBool("testMode", ::testMode);
+        prefs.putBool("firstLEDMode", ::firstLEDMode);
+        prefs.end();
+
+        if (wordEditorActive) {
+            request->send(200, "text/plain", "Editor-Lock aktiv");
+            return;
+        }
+
+        updateTime();
+        showTime(currentHour, currentMinute);
+        request->send(200, "text/plain", "Editor-Lock deaktiviert");
+    });
+
     server.on("/api/preview-words", HTTP_POST, [&](AsyncWebServerRequest *request) {
         String wordsCsv = "";
         if (request->hasParam("words", true)) {
@@ -725,6 +775,9 @@ namespace WebServerLogic
             }
         }
 
+        wordEditorActive = !words.empty();
+        wordEditorLastActivityMs = millis();
+
         ::testMode = false;
         ::firstLEDMode = false;
         prefs.begin("settings", false);
@@ -732,13 +785,19 @@ namespace WebServerLogic
         prefs.putBool("firstLEDMode", ::firstLEDMode);
         prefs.end();
 
-        clearAll();
-        uint32_t color = dimColor(255, 255, 255);
-        for (const String &word : words) {
-            lightWord(word.c_str(), color);
+        if (wordEditorActive) {
+            clearAll();
+            uint32_t color = dimColor(255, 255, 255);
+            for (const String &word : words) {
+                lightWord(word.c_str(), color);
+            }
+            request->send(200, "text/plain", "Vorschau aktualisiert");
+            return;
         }
 
-        request->send(200, "text/plain", "Vorschau aktualisiert");
+        updateTime();
+        showTime(currentHour, currentMinute);
+        request->send(200, "text/plain", "Editor beendet");
     });
 
     server.on("/api/background", HTTP_GET, [](AsyncWebServerRequest *request) {

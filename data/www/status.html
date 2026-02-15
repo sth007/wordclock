@@ -33,6 +33,7 @@
         .testButtons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
         .testButtons a { padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 13px; }
         .testButtons a:hover { opacity: 0.8; }
+        .testButtons a.disabled { background: #9ca3af; pointer-events: none; cursor: not-allowed; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -74,9 +75,9 @@
             
             <h4 style="margin-top: 15px;">Test-Funktionen</h4>
             <div class="testButtons">
-                <a href="/test">LED-Test {{testToggle}}</a>
-                <a href="/testfirst">Erste LED</a>
-                <a href="/testallatonce">Alle Wörter</a>
+                <a href="/test" class="testAction">LED-Test {{testToggle}}</a>
+                <a href="/testfirst" class="testAction">Erste LED</a>
+                <a href="/testallatonce" class="testAction">Alle Wörter</a>
             </div>
             
             <div class="testButtons" style="margin-top: 10px;">
@@ -104,6 +105,8 @@
         let visualWord = null;
         let visualLeds = [];
         let confirmTimer = null;
+        let testButtonsDisabled = false;
+        let editorHeartbeatTimer = null;
         const wordOrder = [
             'ES', 'IST', 'FUENF', 'ZEHN', 'ZWANZIG', 'DREI', 'VIERTEL', 'VOR', 'NACH', 'HALB',
             'ELF', 'FUENF_H', 'EINS', 'ZWEI', 'DREI_H', 'VIER', 'SECHS', 'ACHT', 'SIEBEN',
@@ -161,6 +164,9 @@
         function selectWord(w) {
             editingWord = w;
             selectedLeds = [...(words[w] || [])];
+            setTestButtonsDisabled(true);
+            setEditorLock(true);
+            startEditorHeartbeat();
             document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
             document.querySelector(`[data-word="${w}"]`).classList.add('selected');
             updateMatrixHighlight();
@@ -168,6 +174,50 @@
             document.getElementById('selectedLeds').innerHTML = `LEDs: <strong>${selectedLeds.join(', ')}</strong>`;
             setSaveStatus('Auto-Save aktiv');
             previewWords([w]).catch(() => {});
+        }
+        function setTestButtonsDisabled(disabled) {
+            testButtonsDisabled = !!disabled;
+            document.querySelectorAll('.testAction').forEach((link) => {
+                if (testButtonsDisabled) {
+                    link.classList.add('disabled');
+                    link.setAttribute('aria-disabled', 'true');
+                    link.tabIndex = -1;
+                } else {
+                    link.classList.remove('disabled');
+                    link.removeAttribute('aria-disabled');
+                    link.removeAttribute('tabindex');
+                }
+            });
+        }
+        function syncEditorLockState() {
+            fetch('/api/info')
+                .then((r) => r.json())
+                .then((info) => {
+                    if (editingWord) return;
+                    setTestButtonsDisabled(!!info.wordEditorActive);
+                })
+                .catch(() => {});
+        }
+        function setEditorLock(active) {
+            const body = new URLSearchParams();
+            body.set('active', active ? '1' : '0');
+            return fetch('/api/editor-lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            }).catch(() => {});
+        }
+        function startEditorHeartbeat() {
+            if (editorHeartbeatTimer) clearInterval(editorHeartbeatTimer);
+            editorHeartbeatTimer = setInterval(() => {
+                if (!editingWord) return;
+                setEditorLock(true);
+            }, 5000);
+        }
+        function stopEditorHeartbeat() {
+            if (!editorHeartbeatTimer) return;
+            clearInterval(editorHeartbeatTimer);
+            editorHeartbeatTimer = null;
         }
         function setSaveStatus(text) {
             document.getElementById('saveStatus').innerHTML = `Auto-Save: <strong>${text}</strong>`;
@@ -210,6 +260,8 @@
                 if (!response.ok) throw new Error(text || 'Speichern fehlgeschlagen');
 
                 words[saveJob.word] = [...saveJob.leds];
+                // Keep device preview in sync with the freshly saved mapping.
+                await previewWords([saveJob.word]).catch(() => {});
                 if (!queuedSave) {
                     visualState = 'confirmed';
                     visualWord = saveJob.word;
@@ -282,6 +334,7 @@
                         let i = r * 41 + c;
                         let a = leds[i] === 1;
                         let targetRow = wordRows[editingWord];
+                        if (editingWord && r === targetRow) a = false;
                         let s = editingWord && r === targetRow && selectedLeds.includes(c);
                         h += `<td class="${a ? 'active' : ''}${s ? ' highlight' : ''}" data-index="${i}" onclick="toggleLED(${i})" title="LED ${i}"></td>`;
                     }
@@ -314,9 +367,12 @@
             visualWord = null;
             visualLeds = [];
             if (confirmTimer) clearTimeout(confirmTimer);
+            stopEditorHeartbeat();
+            setEditorLock(false);
             document.querySelectorAll('.wordBtn').forEach(b => b.classList.remove('selected'));
             document.getElementById('selectedWord').innerHTML = 'Wort: <strong>Keine Auswahl</strong>';
             document.getElementById('selectedLeds').innerHTML = 'LEDs: <strong>-</strong>';
+            setTestButtonsDisabled(false);
             setSaveStatus('inaktiv');
             updateMatrixHighlight();
             previewWords([]).catch(() => {});
@@ -356,11 +412,19 @@
         }
 
         window.addEventListener('load', () => {
+            document.querySelectorAll('.testAction').forEach((link) => {
+                link.addEventListener('click', (event) => {
+                    if (!testButtonsDisabled) return;
+                    event.preventDefault();
+                });
+            });
             refreshBackgroundImage();
             loadWordMappings().then(() => {
                 initWordButtons();
                 updateMatrix();
                 setInterval(updateMatrix, 1000);
+                syncEditorLockState();
+                setInterval(syncEditorLockState, 2000);
             });
         });
     </script>

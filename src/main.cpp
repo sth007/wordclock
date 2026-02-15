@@ -38,6 +38,8 @@ int currentMinute = 0;
 int brightness = DEFAULT_BRIGHTNESS; // 1-10
 bool testMode = false;
 bool firstLEDMode = false;
+bool wordEditorActive = false;
+unsigned long wordEditorLastActivityMs = 0;
 unsigned long diagLastLoopMs = 0;
 unsigned long diagLoopCounter = 0;
 unsigned long diagLastNtpSyncMs = 0;
@@ -222,6 +224,13 @@ void loop()
   diagLastLoopMs = millis();
   diagLoopCounter++;
 
+  // Fallback: lock loest sich, falls Browser ohne "Abbrechen" geschlossen wurde.
+  if (wordEditorActive && millis() - wordEditorLastActivityMs > 120000UL) {
+    wordEditorActive = false;
+    updateTime();
+    showTime(currentHour, currentMinute);
+  }
+
   // OTA bedienen (macht nichts, wenn nicht verbunden)
   handleOTA();
 
@@ -231,6 +240,12 @@ void loop()
       Serial.println("[WiFi] Reconnect-Versuch...");
       WiFi.reconnect();
     }
+  }
+
+  // Während Word-Editor aktiv ist, darf kein Test- oder Zeitmodus rendern.
+  if (wordEditorActive) {
+    delay(10);
+    return;
   }
 
   // Im Test-Modus schneller laufen (für Animation)
