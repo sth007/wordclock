@@ -2,6 +2,8 @@
 
 Digitale WordClock mit ESP32-C3, NeoPixel-LED-Matrix, Web-UI, NTP-Zeitsynchronisation und OTA-Updates.
 
+![WordClock System Overview](assets/readme/01-system-overview.svg)
+
 ## Features
 
 - Deutsche Wortuhr auf einer `41 x 10` Matrix (`410` LEDs).
@@ -89,6 +91,16 @@ pio device monitor -e esp32-c3
 ```
 
 Hinweis: Nach UI-Änderungen immer `uploadfs` ausführen, sonst ist auf dem Gerät noch die alte Web-Version.
+
+## Visuals
+
+### LED Editor Auto-Save
+
+![LED Editor Auto-Save](assets/readme/02-led-editor-autosave.svg)
+
+### Build and Upload Flow
+
+![Build and Upload Flow](assets/readme/03-build-upload-flow.svg)
 
 ## Lizenz
 

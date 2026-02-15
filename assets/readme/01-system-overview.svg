@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3f6fb"/>
+      <stop offset="100%" stop-color="#e9eef7"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8aa0bf" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f6d94"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="620" fill="url(#bg)"/>
+
+  <text x="60" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700" fill="#1f2d3d">WordClock System Overview</text>
+  <text x="60" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="21" fill="#4d647d">ESP32-C3, Web-UI, LED matrix and OTA workflow</text>
+
+  <rect x="70" y="180" rx="20" ry="20" width="300" height="290" fill="#ffffff" stroke="#bfd0e5" stroke-width="2" filter="url(#shadow)"/>
+  <text x="100" y="230" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#26384d">Browser</text>
+  <text x="100" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">/config</text>
+  <text x="100" y="302" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">/status</text>
+  <text x="100" y="334" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">LED Editor + Auto-Save</text>
+  <text x="100" y="366" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">Background upload</text>
+  <text x="100" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">Test functions</text>
+
+  <rect x="450" y="150" rx="20" ry="20" width="320" height="360" fill="#ffffff" stroke="#bfd0e5" stroke-width="2" filter="url(#shadow)"/>
+  <text x="485" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" fill="#26384d">ESP32-C3</text>
+  <text x="485" y="250" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">Async WebServer</text>
+  <text x="485" y="282" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">LittleFS (data/www)</text>
+  <text x="485" y="314" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">NVS Word Mapping</text>
+  <text x="485" y="346" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">NTP + Time Logic</text>
+  <text x="485" y="378" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">OTA Firmware + FS</text>
+  <text x="485" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">/api/word, /api/words</text>
+  <text x="485" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#425b78">/api/leds, /api/background</text>
+
+  <rect x="860" y="180" rx="20" ry="20" width="270" height="290" fill="#ffffff" stroke="#bfd0e5" stroke-width="2" filter="url(#shadow)"/>
+  <text x="894" y="230" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#26384d">LED Matrix</text>
+  <text x="894" y="270" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">41 x 10</text>
+  <text x="894" y="302" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">410 NeoPixels</text>
+  <text x="894" y="334" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">Word highlight</text>
+  <text x="894" y="366" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">Time display</text>
+  <text x="894" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="20" fill="#425b78">Test modes</text>
+
+  <line x1="370" y1="325" x2="450" y2="325" stroke="#4f6d94" stroke-width="4" marker-end="url(#arrow)"/>
+  <line x1="770" y1="325" x2="860" y2="325" stroke="#4f6d94" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="378" y="305" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#3a577a">HTTP</text>
+  <text x="790" y="305" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#3a577a">GPIO</text>
+
+  <rect x="70" y="520" rx="12" ry="12" width="1060" height="64" fill="#dfe8f5" stroke="#bfd0e5"/>
+  <text x="95" y="560" font-family="Segoe UI, Arial, sans-serif" font-size="21" fill="#2f4768">Tip: Update web files with</text>
+  <text x="420" y="560" font-family="Consolas, Menlo, monospace" font-size="22" font-weight="700" fill="#1f3350">pio run -t uploadfs -e esp32-c3</text>
+</svg>

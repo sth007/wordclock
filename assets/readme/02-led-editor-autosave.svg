@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8f6f2"/>
+      <stop offset="100%" stop-color="#efe9df"/>
+    </linearGradient>
+    <filter id="shadow2" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8b7852" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#856a38"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="620" fill="url(#bg2)"/>
+
+  <text x="60" y="70" font-family="Segoe UI, Arial, sans-serif" font-size="40" font-weight="700" fill="#3a2f1d">LED Editor Auto-Save Feedback</text>
+  <text x="60" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="21" fill="#6d5935">Visual state when clicking LEDs in /status</text>
+
+  <rect x="65" y="160" rx="18" ry="18" width="330" height="360" fill="#fff" stroke="#d2c29f" stroke-width="2" filter="url(#shadow2)"/>
+  <text x="95" y="215" font-family="Segoe UI, Arial, sans-serif" font-size="29" font-weight="700" fill="#3f3523">1. Click LED</text>
+  <rect x="95" y="250" width="270" height="220" rx="8" fill="#f3f3f3" stroke="#d8d8d8"/>
+  <g transform="translate(110,268)">
+    <rect x="0" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="24" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="48" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="72" y="0" width="22" height="22" fill="#ff5a5a" stroke="#c53434"/>
+    <rect x="96" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="120" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="144" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="168" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+    <rect x="192" y="0" width="22" height="22" fill="#d9d9d9" stroke="#a7a7a7"/>
+  </g>
+  <text x="95" y="495" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5f4d2d">Local selection is updated immediately</text>
+
+  <rect x="435" y="160" rx="18" ry="18" width="330" height="360" fill="#fff" stroke="#d2c29f" stroke-width="2" filter="url(#shadow2)"/>
+  <text x="465" y="215" font-family="Segoe UI, Arial, sans-serif" font-size="29" font-weight="700" fill="#3f3523">2. Sending...</text>
+  <rect x="465" y="250" width="270" height="220" rx="8" fill="#f3f3f3" stroke="#d8d8d8"/>
+  <g transform="translate(480,268)">
+    <rect x="0" y="0" width="22" height="22" fill="#ffd96a" stroke="#cda83a"/>
+    <rect x="24" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="48" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="72" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="96" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="120" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="144" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="168" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+    <rect x="192" y="0" width="22" height="22" fill="#ffb8b8" stroke="#e47a7a"/>
+  </g>
+  <text x="465" y="495" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5f4d2d">Pending state = light red (request in flight)</text>
+
+  <rect x="805" y="160" rx="18" ry="18" width="330" height="360" fill="#fff" stroke="#d2c29f" stroke-width="2" filter="url(#shadow2)"/>
+  <text x="835" y="215" font-family="Segoe UI, Arial, sans-serif" font-size="29" font-weight="700" fill="#3f3523">3. Confirmed</text>
+  <rect x="835" y="250" width="270" height="220" rx="8" fill="#f3f3f3" stroke="#d8d8d8"/>
+  <g transform="translate(850,268)">
+    <rect x="0" y="0" width="22" height="22" fill="#ffd96a" stroke="#cda83a"/>
+    <rect x="24" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="48" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="72" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="96" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="120" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="144" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="168" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+    <rect x="192" y="0" width="22" height="22" fill="#ff5a5a" stroke="#b72c2c"/>
+  </g>
+  <text x="835" y="495" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#5f4d2d">Final color after ESP32 success response</text>
+
+  <line x1="396" y1="340" x2="434" y2="340" stroke="#856a38" stroke-width="4" marker-end="url(#arrow2)"/>
+  <line x1="766" y1="340" x2="804" y2="340" stroke="#856a38" stroke-width="4" marker-end="url(#arrow2)"/>
+</svg>
