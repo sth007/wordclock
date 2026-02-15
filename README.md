@@ -4,6 +4,10 @@ Digitale WordClock mit ESP32-C3, NeoPixel-LED-Matrix, Web-UI, NTP-Zeitsynchronis
 
 ![WordClock System Overview](assets/readme/01-system-overview.svg)
 
+## 📷 Demo
+
+![WordClock Demo](images/wordclock_esp32.png)
+
 ## Features
 
 - Deutsche Wortuhr auf einer `41 x 10` Matrix (`410` LEDs).
